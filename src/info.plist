@@ -773,6 +773,8 @@ end run</string>
 	<string># alfred-GWAS 🧬
 An Alfred workflow to quickly interrogate the GWAS catalog
 
+![](alfred-GWAS.png)
+
 # Motivation ✅
 
 - to obtain, without opening websites, a summarized version of all genes associated with a particular trait in the GWAS catalog, or all traits asssociated with a gene or locus.

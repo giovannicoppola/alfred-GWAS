@@ -54,7 +54,7 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 	
 ## Querying by trait 👤
 - launch with keyword (default: `gwt`) or custom hotkey. Results will include a gene name, the number of associated traits, and the number of papers. 
-- once a gene is selected, associated traits are shown, including for each trait the range of OR (or beta), minimum p-value, number of papers supporting the association, and number of associated loci.
+- once a gene is selected, associated traits are shown, including for each trait the range of OR (or beta), minimum p-value, number of papers supporting the association, and number of associated loci. Alfred's QuickOutlook (`shift`) will show the expression profile from [GTEx](https://gtexportal.org/home/). Hit `shift` again to close. 
 - output is sorted by number of supporting papers. Adding `--es` to the search string will sort by largest reported effect size (OR or beta). 
 	- `ctrl-enter` will show the currently selected gene-trait pair in large font, and copy to clipboard
 	- `cmd-enter` will copy the entire gene-trait list to clipboard
