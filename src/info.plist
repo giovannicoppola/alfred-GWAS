@@ -35,7 +35,7 @@
 			</dict>
 			<dict>
 				<key>destinationuid</key>
-				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
+				<string>COND0001-ACT1-CHECK-OPEN-PUBMED000001</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -106,6 +106,18 @@
 			</dict>
 			<dict>
 				<key>destinationuid</key>
+				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>D1A2B3C4-E5F6-7890-ABCD-EF1234567890</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
 				<string>65ABACDB-26F3-4D99-8E2A-145E05195090</string>
 				<key>modifiers</key>
 				<integer>0</integer>
@@ -118,6 +130,18 @@
 			</dict>
 			<dict>
 				<key>destinationuid</key>
+				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>A9B8C7D6-E5F4-3210-FEDC-BA0987654321</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
 				<string>557B9C36-D8EF-471C-9C50-3A1BE9667134</string>
 				<key>modifiers</key>
 				<integer>0</integer>
@@ -125,6 +149,33 @@
 				<string></string>
 				<key>sourceoutputuid</key>
 				<string>6E7636A0-D4CF-41C1-A000-52E93CC53B70</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
 				<key>vitoclose</key>
 				<false/>
 			</dict>
@@ -340,11 +391,11 @@
 				<key>focusedappvariablename</key>
 				<string></string>
 				<key>hotkey</key>
-				<integer>23</integer>
+				<integer>0</integer>
 				<key>hotmod</key>
-				<integer>1835008</integer>
+				<integer>0</integer>
 				<key>hotstring</key>
-				<string>5</string>
+				<string></string>
 				<key>leftcursor</key>
 				<false/>
 				<key>modsmode</key>
@@ -443,11 +494,11 @@ python3 query-items.py "$1"</string>
 				<key>focusedappvariablename</key>
 				<string></string>
 				<key>hotkey</key>
-				<integer>21</integer>
+				<integer>0</integer>
 				<key>hotmod</key>
-				<integer>1835008</integer>
+				<integer>0</integer>
 				<key>hotstring</key>
-				<string>4</string>
+				<string></string>
 				<key>leftcursor</key>
 				<false/>
 				<key>modsmode</key>
@@ -654,6 +705,25 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>externaltriggerid</key>
+				<string>GWG</string>
+				<key>passinputasargument</key>
+				<true/>
+				<key>passvariables</key>
+				<true/>
+				<key>workflowbundleid</key>
+				<string>self</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.callexternaltrigger</string>
+			<key>uid</key>
+			<string>65ABACDB-26F3-4D99-8E2A-145E05195090</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>conditions</key>
 				<array>
 					<dict>
@@ -698,6 +768,34 @@ end run</string>
 						<key>uid</key>
 						<string>6E7636A0-D4CF-41C1-A000-52E93CC53B70</string>
 					</dict>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:mySource}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>0</integer>
+						<key>matchstring</key>
+						<string>GWT</string>
+						<key>outputlabel</key>
+						<string>back to genes (from papers)</string>
+						<key>uid</key>
+						<string>D1A2B3C4-E5F6-7890-ABCD-EF1234567890</string>
+					</dict>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:mySource}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>0</integer>
+						<key>matchstring</key>
+						<string>GWG</string>
+						<key>outputlabel</key>
+						<string>back to traits (from papers)</string>
+						<key>uid</key>
+						<string>A9B8C7D6-E5F4-3210-FEDC-BA0987654321</string>
+					</dict>
 				</array>
 				<key>elselabel</key>
 				<string>else</string>
@@ -714,21 +812,116 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>externaltriggerid</key>
-				<string>GWG</string>
-				<key>passinputasargument</key>
+				<key>conditions</key>
+				<array>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:myAction}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>0</integer>
+						<key>matchstring</key>
+						<string>openPubMed</string>
+						<key>outputlabel</key>
+						<string>open PubMed</string>
+						<key>uid</key>
+						<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
+					</dict>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:myAction}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>1</integer>
+						<key>matchstring</key>
+						<string>openPubMed</string>
+						<key>outputlabel</key>
+						<string>List-Items</string>
+						<key>uid</key>
+						<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
+					</dict>
+				</array>
+				<key>elselabel</key>
+				<string>else</string>
+				<key>hideelse</key>
 				<true/>
-				<key>passvariables</key>
-				<true/>
-				<key>workflowbundleid</key>
-				<string>self</string>
 			</dict>
 			<key>type</key>
-			<string>alfred.workflow.output.callexternaltrigger</string>
+			<string>alfred.workflow.utility.conditional</string>
 			<key>uid</key>
-			<string>65ABACDB-26F3-4D99-8E2A-145E05195090</string>
+			<string>COND0001-ACT1-CHECK-OPEN-PUBMED000001</string>
 			<key>version</key>
 			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<false/>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>https://pubmed.ncbi.nlm.nih.gov/{var:myPUBMED}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>::rebuild</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>⏳️...please wait while I rebuild the database...</string>
+				<key>script</key>
+				<string>bash rebuild-launcher.sh</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>rebuild GWAS catalog</string>
+				<key>type</key>
+				<integer>11</integer>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>B6020A87-4B92-4E1F-8264-9BE8BC1AE3DA</string>
+			<key>version</key>
+			<integer>3</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -809,40 +1002,54 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 - once an individual association is selected, `enter` will open the supporting publication in Pubmed.</string>
 	<key>uidata</key>
 	<dict>
+		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
+		<dict>
+			<key>xpos</key>
+			<real>850</real>
+			<key>ypos</key>
+			<real>180</real>
+		</dict>
+		<key>OPENURL1-PUB1-MED1-OPEN-URL000000001</key>
+		<dict>
+			<key>xpos</key>
+			<real>1050</real>
+			<key>ypos</key>
+			<real>100</real>
+		</dict>
 		<key>17432091-9261-4427-9D12-5524514AFEC9</key>
 		<dict>
 			<key>xpos</key>
-			<real>250</real>
+			<real>240</real>
 			<key>ypos</key>
-			<real>220</real>
+			<real>180</real>
 		</dict>
 		<key>2BA024A6-A356-4780-99A4-7ACF20024901</key>
 		<dict>
 			<key>xpos</key>
-			<real>965</real>
+			<real>955</real>
 			<key>ypos</key>
-			<real>330</real>
+			<real>290</real>
 		</dict>
 		<key>31843F63-69D9-4A85-AF79-7135282AC472</key>
 		<dict>
 			<key>xpos</key>
-			<real>1190</real>
+			<real>1180</real>
 			<key>ypos</key>
-			<real>195</real>
+			<real>155</real>
 		</dict>
 		<key>3ABBBCAA-B34D-44A8-90C3-10CDE8C64012</key>
 		<dict>
 			<key>note</key>
 			<string>List Items</string>
 			<key>xpos</key>
-			<real>725</real>
+			<real>715</real>
 			<key>ypos</key>
-			<real>325</real>
+			<real>285</real>
 		</dict>
 		<key>557B9C36-D8EF-471C-9C50-3A1BE9667134</key>
 		<dict>
 			<key>xpos</key>
-			<real>1190</real>
+			<real>1220</real>
 			<key>ypos</key>
 			<real>860</real>
 		</dict>
@@ -858,25 +1065,25 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<key>colorindex</key>
 			<integer>4</integer>
 			<key>xpos</key>
-			<real>1190</real>
+			<real>1215</real>
 			<key>ypos</key>
-			<real>745</real>
+			<real>720</real>
 		</dict>
 		<key>699ADFDD-0B0B-4CBD-93EC-EBB59388F477</key>
 		<dict>
 			<key>xpos</key>
-			<real>965</real>
+			<real>955</real>
 			<key>ypos</key>
-			<real>495</real>
+			<real>455</real>
 		</dict>
 		<key>76595B2F-BED7-421D-9DD2-84223E355EF9</key>
 		<dict>
 			<key>note</key>
 			<string>Search GWAS catalog by trait</string>
 			<key>xpos</key>
-			<real>490</real>
+			<real>480</real>
 			<key>ypos</key>
-			<real>220</real>
+			<real>180</real>
 		</dict>
 		<key>80227F6F-5A8D-4312-9798-F92AE27D0E7E</key>
 		<dict>
@@ -885,14 +1092,14 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<key>xpos</key>
 			<real>1190</real>
 			<key>ypos</key>
-			<real>625</real>
+			<real>580</real>
 		</dict>
 		<key>99981613-3EE3-446B-9255-E2A40F19723F</key>
 		<dict>
 			<key>xpos</key>
-			<real>250</real>
+			<real>240</real>
 			<key>ypos</key>
-			<real>425</real>
+			<real>385</real>
 		</dict>
 		<key>A2CFE3AC-9EA3-4E5C-A41C-9DB533551E33</key>
 		<dict>
@@ -904,9 +1111,16 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 		<key>B11610E4-CEC7-43B8-B79B-7D30CE301D20</key>
 		<dict>
 			<key>xpos</key>
-			<real>1000</real>
+			<real>990</real>
 			<key>ypos</key>
-			<real>140</real>
+			<real>100</real>
+		</dict>
+		<key>B6020A87-4B92-4E1F-8264-9BE8BC1AE3DA</key>
+		<dict>
+			<key>xpos</key>
+			<real>255</real>
+			<key>ypos</key>
+			<real>800</real>
 		</dict>
 		<key>C66B35FD-06D8-4233-B22E-80DB797B7D24</key>
 		<dict>
@@ -920,16 +1134,16 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<key>note</key>
 			<string>Search GWAS catalog by trait</string>
 			<key>xpos</key>
-			<real>490</real>
+			<real>480</real>
 			<key>ypos</key>
-			<real>425</real>
+			<real>385</real>
 		</dict>
 		<key>E38BB156-012F-438A-9C25-3936B8E024F8</key>
 		<dict>
 			<key>xpos</key>
-			<real>1190</real>
+			<real>1180</real>
 			<key>ypos</key>
-			<real>55</real>
+			<real>15</real>
 		</dict>
 		<key>EAA05931-850D-4751-98E1-DE20543181BD</key>
 		<dict>
@@ -991,10 +1205,8 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<string>traitQuery</string>
 		</dict>
 	</array>
-	<key>variablesdontexport</key>
-	<array/>
 	<key>version</key>
-	<string>0.4</string>
+	<string>0.5</string>
 	<key>webaddress</key>
 	<string>https://github.com/giovannicoppola/alfred-GWAS</string>
 </dict>
