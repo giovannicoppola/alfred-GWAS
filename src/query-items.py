@@ -12,7 +12,6 @@ import sqlite3
 import json
 import sys
 import os
-import webbrowser
 from config import INDEX_DB, log, GWAS_REF
 
 
@@ -24,6 +23,14 @@ result = {"items": [], "variables":{}}
 MYSOURCE = os.getenv('mySource')
 MYENTRY = sys.argv[1]
 MYTITLE = os.getenv('currentTITLE')
+MYENTRY_Q = os.getenv('myENTRY_Q', '')
+
+# Map incoming source to the source needed to reproduce the previous step (for back from papers)
+BACK_SOURCE_MAP = {
+    "traitGene": "GWT",   # trait→gene→papers: back to gene list (needs GWT)
+    "geneTrait": "GWG",   # gene→trait→papers: back to trait list (needs GWG)
+    "genePap": "GWG",     # gene→papers: back to trait list (needs GWG)
+}
 
 def showGenes ():
     MYTRAIT = os.getenv('currentTrait')
@@ -108,8 +115,10 @@ def showGenes ():
         "variables": {
         "currentTITLE": itemString,
         "mySource": "traitGene",
-        "myBIGFONT": myBIGFONT, 
-        "myKEYlist": KeyList
+        "myAction": "",
+        "myBIGFONT": myBIGFONT,
+        "myKEYlist": KeyList,
+        "myENTRY_Q": MYENTRY_Q
         },
         
         "icon": {   
@@ -209,8 +218,10 @@ def showTraits ():
         "subtitle": f"{countR}/{myResLen} {Trait}",
         "variables": {
         "mySource": "geneTrait",
-        "myBIGFONT": myBIGFONT, 
-        "myKEYlist": KeyList
+        "myAction": "",
+        "myBIGFONT": myBIGFONT,
+        "myKEYlist": KeyList,
+        "myENTRY_Q": MYENTRY_Q
         },    
         "arg": "",
         "icon": {  
@@ -284,9 +295,11 @@ def showPapers ():
         "title": myTitle,
         
          "variables": {
-        "mySource": "papers",
+        "mySource": BACK_SOURCE_MAP.get(MYSOURCE, MYSOURCE),
+        "myAction": "openPubMed",
         "myPUBMED": pubmedID,
-        "myBIGFONT": mySubTitle
+        "myBIGFONT": mySubTitle,
+        "myENTRY_Q": MYENTRY_Q
         },            
         "arg": "",
         "icon": {   
@@ -307,26 +320,20 @@ def showPapers ():
 
 def main():
 
-
     if MYSOURCE == "GWT": #source is the GWAS trait search
         showGenes ()
-
 
     elif MYSOURCE == "GWG": #source is the GWAS gene search
         showTraits ()
 
     elif MYSOURCE == "geneTrait": # to get papers after gene > trait
         showPapers ()
-        
+
     elif MYSOURCE == "traitGene": #to get papers after trait >gene
         showPapers ()
-        
+
     elif MYSOURCE == "genePap":
         showPapers ()
-
-    elif MYSOURCE == "papers":
-        MYPUBMED = os.getenv('myPUBMED')
-        webbrowser.open(f'https://pubmed.ncbi.nlm.nih.gov/{MYPUBMED}', new=2)
 
 
 if __name__ == '__main__':

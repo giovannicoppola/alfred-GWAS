@@ -25,16 +25,14 @@ def logF(log_message, file_name):
         f.write(log_message + "\n")
 
 def checkDatabase():
-    
+
     DB_ZIPPED = 'index.db.zip'
-    
+
     if os.path.exists(DB_ZIPPED):  # there is a zipped database: distribution version
         log ("found distribution database, extracting")
         with zipfile.ZipFile(DB_ZIPPED, "r") as zip_ref:
             zip_ref.extractall(WF_DATA)
         os.remove (DB_ZIPPED)
-    elif os.path.exists('index.db'):  # there is a new version, possibly rebuilt via script: replace the version in DATA
-        os.rename('index.db', INDEX_DB)
 
 
 def fetchColophon():
