@@ -67,13 +67,18 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 
 
 ## rebuilding database (optional) 🛠️
-- `alfred-GWAS` comes with the database derived from version `e109_r2023-05-07` of the GWAS catalog (v1.0.2, all associations) available [here](https://www.ebi.ac.uk/gwas/docs/file-downloads).
-- the script `build-GWAS-index.py` can be used to rebuild/update the database. Run with `python3 build-GWAS-index.py "path-to-GWAS-file.tsv"`, or select the file in Finder and use the Universal Action. 
+- `alfred-GWAS` ships with a prebuilt database derived from the GWAS catalog (v1.0.2, all associations), available [here](https://www.ebi.ac.uk/gwas/docs/file-downloads). The version in use is shown in the reference line of any copied output.
+- the easiest way to update is the `::rebuild` keyword: it checks the EBI server for the current release, downloads it, and builds the database in the background. You can close Alfred while it runs, and run `::rebuild` again to check progress.
+- alternatively run the script directly with `python3 build-GWAS-index.py "path-to-GWAS-file.tsv"`, or select the file in Finder and use the Universal Action. With no file argument the script downloads the latest release itself.
+- rebuilding requires [pandas](https://pandas.pydata.org) (`pip3 install pandas`); the search keywords themselves need nothing beyond the system Python.
+- the new database is built alongside the old one and only swapped in once it is complete, so a failed or interrupted rebuild leaves your existing database untouched.
 
 
 <h1 id="known-issues">Limitations & known issues ⚠️</h1>
 
-- None for now, but I have not done extensive testing, let me know if you see anything!
+- gene search matches on gene symbols, synonyms and Ensembl ids. Genes that carry no annotation in the bundled lookup table are listed and searchable under their Ensembl id only.
+- searches match anywhere in the name, so very short queries can return thousands of results.
+- let me know if you see anything else!
 
 
 
@@ -84,6 +89,7 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 	
 <h1 id="changelog">Changelog 🧰</h1>
 
+- version 0.5: `::rebuild` keyword with background download of the current catalog release; fixed drill-down on traits containing an apostrophe (e.g. Crohn's disease); genes with no annotation are no longer hidden from search; empty result sets and missing values no longer break a search; the rebuild no longer replaces the database until it has succeeded.
 - 05-17-2023: version 0.4
 - 03-25-2023: version 0.3
 - 05-31-2022: version 0.2

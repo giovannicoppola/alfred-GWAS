@@ -10,148 +10,109 @@
 #NYP – Clear ☀️   🌡️+55°F (feels +54°F, 26%) 🌬️→6mph 🌓 Mon Mar 27 00:55:03 2023
 #W13Q1 – 86 ➡️ 278 – 320 ❇️ 44
 
-# checking summaries from the GWAS catalog, by gene 
+# checking summaries from the GWAS catalog, by gene
 
 
-import sqlite3
-import json
-import sys
 import os
+import sqlite3
+import sys
+import traceback
 
-from config import INDEX_DB, log, databaseReady, NOT_BUILT
-MYSOURCE = os.getenv('mySource')
-MYENTRY_Q = os.getenv('myENTRY_Q')
-MYGENE = os.getenv('currentGeneID')
+from config import INDEX_DB, alfredError, alfredItems, requireDatabase
 
-def queryGenes ():
-    if not databaseReady():
-        print(json.dumps(NOT_BUILT))
-        return
-    result = {"items": [], "variables":{}}
+MYSOURCE = os.getenv('mySource', '')
+MYENTRY_Q = os.getenv('myENTRY_Q', '')
+MYGENE = os.getenv('currentGeneID', '')
+MYARG = sys.argv[1] if len(sys.argv) > 1 else ''
 
 
-    db = sqlite3.connect(INDEX_DB)
-    cursor = db.cursor()
+def queryGenes():
 
-    argv1 = sys.argv[1] if len(sys.argv) > 1 else ""
-    if MYSOURCE in ["GWG"] and argv1 == '':
-        MYINPUT= MYENTRY_Q or ""
+    if MYSOURCE == "GWG" and MYARG == '':
+        MYINPUT = MYENTRY_Q
 
-    elif MYSOURCE in ["geneMasterSearch"]:
-        MYINPUT= MYGENE or ""
+    elif MYSOURCE == "geneMasterSearch":
+        MYINPUT = MYGENE
 
     else:
-        MYINPUT= argv1.strip()
+        MYINPUT = MYARG
 
+    MYINPUT = (MYINPUT or '').strip()
 
     orderS = 'ORDER BY nTraits DESC'
 
-
-    if "--p" in MYINPUT:
-        orderS = "ORDER BY nPapers DESC "
-        MYINPUT = MYINPUT.replace (' --p','')
+    # flags are matched as whole words, so '--p' never fires on '--paper'
+    words = MYINPUT.split()
+    if "--p" in words:
+        orderS = "ORDER BY nPapers DESC"
+        MYINPUT = ' '.join(word for word in words if word != "--p")
 
     MYQUERY = "%" + MYINPUT + "%"
 
+    db = sqlite3.connect(INDEX_DB)
+    db.row_factory = sqlite3.Row
 
-
-    try:
-        cursor.execute(f"""SELECT *
+    # COALESCE keeps genes with no annotation searchable by their Ensembl id
+    rs = db.execute(f"""SELECT *
         FROM geneCounts
-        WHERE searchField LIKE '{MYQUERY}' {orderS}""")
-        
-        rs = cursor.fetchall()
-    
+        WHERE COALESCE(searchField, gene) LIKE ? {orderS}""", (MYQUERY,)).fetchall()
+    db.close()
 
-        
+    if not rs:
+        alfredError("No matches", "Try a different query")
+        return
 
-    except sqlite3.OperationalError as err:
-        result= {"items": [{
-        "title": "Error: " + str(err),
-        "subtitle": "Some error",
-        "arg": "",
-        "icon": {
+    items = []
+    myResLen = len(rs)
 
-                "path": "icons/Warning.png"
-            }
-        }]}
-        print (json.dumps(result))
-        raise err
+    for countR, r in enumerate(rs, start=1):
 
-    if (rs):
-        myResLen = str(len (rs))
-        countR=1
-        
-        for r in rs:
-            
-            
-            FeatureName = r[2]
-            geneID = r[0]
-            
-            PapersCount = r[5]
-            paperString = "paper" if (PapersCount == 1) else "papers"
+        geneID = r['gene']
+        FeatureName = r['GeneName'] or geneID
 
-            TraitCount = r[1]
-            traitString = "trait" if (TraitCount == 1) else "traits"
-            
-            
-            subtitleString = (str(countR)+"/"+myResLen +
-            f" – associated with {TraitCount:,} {traitString}, from {PapersCount:,} {paperString}"
-                
-                
-            )
-            
-            titleString = f"{FeatureName}: {TraitCount:,} {traitString} ({PapersCount:,} {paperString})"
-            
-        
-        
-            #### COMPILING OUTPUT    
-            result["items"].append({
+        PapersCount = r['nPapers']
+        paperString = "paper" if (PapersCount == 1) else "papers"
+
+        TraitCount = r['nTraits']
+        traitString = "trait" if (TraitCount == 1) else "traits"
+
+        subtitleString = (f"{countR}/{myResLen}"
+                          f" – associated with {TraitCount:,} {traitString}, "
+                          f"from {PapersCount:,} {paperString}")
+
+        titleString = f"{FeatureName}: {TraitCount:,} {traitString} ({PapersCount:,} {paperString})"
+
+        #### COMPILING OUTPUT
+        items.append({
             "title": titleString,
             "subtitle": subtitleString,
-                
+
             "arg": FeatureName,
-            
+
             "variables": {
-            "currentTrait": FeatureName,
-            "currentGenes": geneID,
-            "currentTITLE": titleString,
-            "myENTRY_Q": MYINPUT,
-            "mySource": "GWG"
+                "currentTrait": FeatureName,
+                "currentGenes": geneID,
+                "currentTITLE": titleString,
+                "myENTRY_Q": MYINPUT,
+                "mySource": "GWG"
             },
-            
-            "icon": {   
-            
-            "path": ""
-        }
-            
 
-            })
-            countR += 1  
-
-                
-
-        print (json.dumps(result))
-
-    if MYQUERY and not rs:
-        resultErr= {"items": [{
-            "title": "No matches",
-            "subtitle": "Try a different query",
-            "arg": "",
             "icon": {
-                "path": "icons/Warning.png"
-                }
-            
-                }]}
-        print (json.dumps(resultErr))
+                "path": ""
+            }
+        })
 
+    alfredItems(items)
 
 
 def main():
-    
-    queryGenes ()
+    requireDatabase()
+    queryGenes()
+
 
 if __name__ == '__main__':
-    main ()
-
-
+    try:
+        main()
+    except Exception as err:
+        traceback.print_exc(file=sys.stderr)
+        alfredError(f"Error: {type(err).__name__}", str(err))

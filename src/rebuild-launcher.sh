@@ -6,6 +6,10 @@
 # - Checks if current version is already built
 # - If not: starts rebuild in background
 
+# match the PATH the query script filters use, so the rebuild runs under the
+# same interpreter the user installed pandas into
+export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WF_DATA="${alfred_workflow_data:-.}"
 LOG_FILE="$WF_DATA/rebuild.log"
@@ -27,6 +31,29 @@ if [ -n "$RUNNING_PID" ]; then
     "text": {
       "largetype": "GWAS Catalog Rebuild In Progress\n\nProcess ID: $RUNNING_PID\nRunning for: $ELAPSED\n\nYou can close Alfred - the rebuild will continue in the background"
     }
+  }]
+}
+EOF
+    exit 0
+fi
+
+# Pick an interpreter that can actually run the build
+PYTHON=""
+for CANDIDATE in $(command -v python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+    if [ -x "$CANDIDATE" ] && "$CANDIDATE" -c "import pandas" 2>/dev/null; then
+        PYTHON="$CANDIDATE"
+        break
+    fi
+done
+
+if [ -z "$PYTHON" ]; then
+    cat <<EOF
+{
+  "items": [{
+    "title": "⚠️ pandas is not installed",
+    "subtitle": "The rebuild needs pandas: run 'pip3 install pandas' and try again",
+    "valid": false,
+    "icon": {"path": "icons/Warning.png"}
   }]
 }
 EOF
@@ -68,7 +95,7 @@ fi
 
 # Launch the build in background, fully detached from Alfred
 cd "$SCRIPT_DIR"
-nohup /usr/bin/python3 build-GWAS-index.py > "$LOG_FILE" 2>&1 &
+nohup "$PYTHON" build-GWAS-index.py > "$LOG_FILE" 2>&1 &
 PID=$!
 disown $PID 2>/dev/null
 

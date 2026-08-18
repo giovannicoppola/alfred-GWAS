@@ -46,7 +46,6 @@ __author__ = "giovanni"
 import sqlite3
 from time import time
 import pandas as pd
-import numpy as np
 import os
 import datetime
 import logging
@@ -68,15 +67,20 @@ LOG_DIR = os.path.join(WF_DATA, 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, f"{timeStr}_log.md")
 
-ANNOTATION_DB = 'geneNames.db'
+HERE = os.path.dirname(os.path.abspath(__file__))
+ANNOTATION_DB = os.path.join(HERE, 'geneNames.db')
 INDEX_DB = os.path.join(WF_DATA, 'index.db')
+# the database is staged here and only swapped in once the build succeeds, so a
+# failed rebuild never leaves the workflow without a usable database
+BUILD_DB = INDEX_DB + '.building'
+DOWNLOAD_TIMEOUT = 120  # seconds
 GWAS_DOWNLOAD_URL = 'https://www.ebi.ac.uk/gwas/api/search/downloads/associations/v1.0.2?split=false'
 
 
 def get_server_filename():
     """Query the GWAS catalog server for the current release filename."""
     req = urllib.request.Request(GWAS_DOWNLOAD_URL, method='HEAD')
-    with urllib.request.urlopen(req) as response:
+    with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT) as response:
         content_disp = response.headers.get('Content-Disposition', '')
     # e.g. "attachement; filename=gwas_catalog_v1.0.2-associations_e115_r2026-02-16_full.zip"
     match = re.search(r'filename=(.+)', content_disp)
@@ -92,7 +96,12 @@ def download_gwas_catalog():
     """
     server_filename = get_server_filename()
     # derive a TSV name from the zip name (e.g. gwas_catalog_v1.0.2-associations_e115_r2026-02-16_full.tsv)
-    tsv_name = server_filename.replace('.zip', '.tsv') if server_filename else f"associations_{timeStr}.tsv"
+    if server_filename:
+        tsv_name = server_filename.replace('.zip', '.tsv')
+    else:
+        # the server did not advertise a filename: fall back to a dated one
+        server_filename = f"associations_{timeStr}.zip"
+        tsv_name = f"associations_{timeStr}.tsv"
     dest_tsv = os.path.join(WF_DATA, tsv_name)
 
     if os.path.exists(dest_tsv):
@@ -142,7 +151,7 @@ def makeColophon(DATA_FILE):
     return colophon
 
 
-def associations_table(INDEX_DB, DATA_FILE):
+def associations_table(dbPath, DATA_FILE):
     """Create the master associations table from the master file"""
 
     # reading the master file in:
@@ -160,7 +169,7 @@ def associations_table(INDEX_DB, DATA_FILE):
 
     t0 = time()
     print (f"\t 2. creating the sqlite database", end = "...", file=sys.stderr)
-    con = sqlite3.connect(INDEX_DB)
+    con = sqlite3.connect(dbPath)
     cursor = con.cursor()
 
     myData['key'] = range(1, len(myData.index)+1)
@@ -197,14 +206,16 @@ def count_comma_separated_elements(s):
     else:
         return 0
 
-def createTraitCounts (myDataFrame):
+def createTraitCounts (myDataFrame, dbPath):
 
     # Importing the gene annotation table from the gene lookup DB
     connAnn = sqlite3.connect(ANNOTATION_DB)
     geneAnnotation = pd.read_sql_query("SELECT GeneName, EnsemblGeneId, searchField FROM geneAnnotation", connAnn)
     connAnn.close()
+    # a repeated Ensembl id would duplicate rows in every merge below
+    geneAnnotation = geneAnnotation.drop_duplicates(subset='EnsemblGeneId')
 
-    con = sqlite3.connect(INDEX_DB)
+    con = sqlite3.connect(dbPath)
     cursor = con.cursor()
 
     cursor.execute(f"DROP TABLE IF EXISTS geneAnnotation")
@@ -256,6 +267,10 @@ def createTraitCounts (myDataFrame):
 
     geneCounts = geneCounts.merge(geneAnnotation, left_on='gene', right_on='EnsemblGeneId', how='left')
     geneCounts = geneCounts.drop('EnsemblGeneId', axis=1)
+    # ~40% of the genes in the catalog have no annotation row: fall back to the
+    # Ensembl id so they are still displayed and still match a search
+    geneCounts['GeneName'] = geneCounts['GeneName'].fillna(geneCounts['gene'])
+    geneCounts['searchField'] = geneCounts['searchField'].fillna(geneCounts['gene'])
 
     print (f"done ({time()-t0:.1f}s, {len(geneCounts):,} genes)", file=sys.stderr)
 
@@ -313,6 +328,8 @@ def createTraitCounts (myDataFrame):
 
     pair_dataAGG = pair_dataAGG.merge(geneAnnotation, left_on='gene', right_on='EnsemblGeneId', how='left')
     pair_dataAGG = pair_dataAGG.drop('EnsemblGeneId', axis=1)
+    pair_dataAGG['GeneName'] = pair_dataAGG['GeneName'].fillna(pair_dataAGG['gene'])
+    pair_dataAGG['searchField'] = pair_dataAGG['searchField'].fillna(pair_dataAGG['gene'])
 
     cursor.execute(f"DROP TABLE IF EXISTS GeneTrait")
     pair_dataAGG.to_sql("GeneTrait", con, index=False)
@@ -339,9 +356,11 @@ def createTraitCounts (myDataFrame):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_GeneTrait_trait ON GeneTrait(trait)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_GeneTrait_gene ON GeneTrait(gene)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_geneAnnotation_ensembl ON geneAnnotation(EnsemblGeneId)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_associations_key ON associations(key)")
     con.commit()
 
     print (f"done ({time()-t0:.1f}s)", file=sys.stderr)
+    con.close()
 
 
 def main(args=None):
@@ -371,8 +390,10 @@ def main(args=None):
 
     try:
 
-        if os.path.exists(INDEX_DB):
-           os.remove(INDEX_DB)
+        # build into a staging file: the live database stays usable until the
+        # new one is complete
+        if os.path.exists(BUILD_DB):
+            os.remove(BUILD_DB)
 
         # Extract version from filename (e.g. "e115_r2026-02-16")
         version_match = re.search(r'associations_(.+?)_full', DATA_FILE)
@@ -388,7 +409,7 @@ def main(args=None):
 
         print (f"1. creating the master associations table", file=sys.stderr)
         step_start = time()
-        myData = associations_table(INDEX_DB,DATA_FILE)
+        myData = associations_table(BUILD_DB,DATA_FILE)
         step1_time = time() - step_start
 
     # outputting basic stats
@@ -415,8 +436,12 @@ def main(args=None):
         print (f"\n2. generating trait and gene counts ...", file=sys.stderr)
 
         step_start = time()
-        createTraitCounts (myData)
+        createTraitCounts (myData, BUILD_DB)
         step2_time = time() - step_start
+
+        # everything succeeded: swap the finished database in atomically
+        os.replace(BUILD_DB, INDEX_DB)
+        print (f"\ndatabase written to {INDEX_DB}", file=sys.stderr)
 
         main_timeElapsed = time() - main_start_time
 
@@ -454,6 +479,10 @@ def main(args=None):
         import traceback
         traceback.print_exc(file=sys.stderr)
         logF (f"\n## ERROR\n```\n{e}\n```", file_name =  LOG_FILE)
+        # leave the previous database in place and report the failure
+        if os.path.exists(BUILD_DB):
+            os.remove(BUILD_DB)
+        sys.exit(1)
 
 
 if __name__ == '__main__':

@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
 
-    
-### ITEMS-QUERY 
+### ITEMS-QUERY
 # showing individual items (i.e. papers, genes, loci)
 
 #### Tuesday, May 31, 2022, 5:05 PM
 # Partly cloudy ⛅️  🌡️+76°F (feels +80°F, 69%) 🌬️→12mph 🌑 Tue May 31 07:24:28 2022
 # W22Q2 – 151 ➡️ 213 – 20 ❇️ 345
 
-import sqlite3
-import json
-import sys
 import os
-from config import INDEX_DB, log, GWAS_REF
+import sqlite3
+import sys
+import traceback
+
+from config import INDEX_DB, GWAS_REF, alfredError, alfredItems, requireDatabase
 
 
-
-db = sqlite3.connect(INDEX_DB)
-cursor = db.cursor()
-result = {"items": [], "variables":{}}
-
-MYSOURCE = os.getenv('mySource')
-MYENTRY = sys.argv[1] if len(sys.argv) > 1 else ""
-MYTITLE = os.getenv('currentTITLE')
+MYSOURCE = os.getenv('mySource', '')
+MYENTRY = sys.argv[1] if len(sys.argv) > 1 else ''
+MYTITLE = os.getenv('currentTITLE', '')
 MYENTRY_Q = os.getenv('myENTRY_Q', '')
+
+# Search modifiers, recognised as whole words and never passed to the search itself
+FLAGS = ('--es', '--p')
 
 # Map incoming source to the source needed to reproduce the previous step (for back from papers)
 BACK_SOURCE_MAP = {
@@ -32,330 +30,296 @@ BACK_SOURCE_MAP = {
     "genePap": "GWG",     # gene→papers: back to trait list (needs GWG)
 }
 
-def showGenes ():
-    MYTRAIT = os.getenv('currentTrait')
-    myTextOutput = ""
-    myResLen = 0
-    countR = 1
-    
-    #MYGENES = os.getenv('currentGenes')
-    orderS = " ORDER BY PapCount*1 DESC, pMax*1 DESC"
-    
-    
-    if "--es" in MYENTRY:
-        orderS = " ORDER BY OR_Bmax*1 DESC"
-    
-    
-    sql = f"""SELECT * FROM GeneTrait 
-            WHERE trait = '{MYTRAIT}' 
-            {orderS}"""
-            
-    cursor.execute(sql)
-    rs = cursor.fetchall()
 
-    
-    if (rs):
-        myResLen = len (rs)
-        countR=1
-    
-    for r in rs:
-        
-        GeneName = r[10] 
-        Trait = r[0] 
-        #GeneLocus = r[3]
-        
-        papList = papListAll = r[6]
-        
-        
-        
-        locus = r[7]
-        keyCount = r[8]
-        KeyList = r[4] 
+def connect():
+    db = sqlite3.connect(INDEX_DB)
+    db.row_factory = sqlite3.Row
+    return db
 
-        PapCount = r[9]
+
+def hasFlag(text, flag):
+    """True when flag appears as its own word (so '--p' never matches '--paper')."""
+    return flag in text.split()
+
+
+def stripFlags(text):
+    return ' '.join(word for word in text.split() if word not in FLAGS)
+
+
+def fmt(value, spec='.2f'):
+    """Format a possibly NULL/NaN numeric column, returning '' when there is no value."""
+    if value is None:
+        return ''
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ''
+    if number != number:  # NaN
+        return ''
+    return format(number, spec)
+
+
+def orBetaBlock(low_value, high_value):
+    """Render the OR/beta range, tolerating either end being absent."""
+    low, high = fmt(low_value), fmt(high_value)
+    if not low and not high:
+        return 'NA'
+    if low == high or not low or not high:
+        return high or low
+    return f'{low}–{high}'
+
+
+def noMatches(subtitle="Try a different query"):
+    alfredItems([{
+        "title": "No matches",
+        "subtitle": subtitle,
+        "valid": False,
+        "icon": {"path": "icons/Warning.png"}
+    }], {"myTextOutput": ""})
+
+
+def emit(items, lines):
+    """Print the item list along with the plain-text version used by the copy action."""
+    lines = [f"**{MYTITLE}**"] + lines + [GWAS_REF]
+    alfredItems(items, {"myTextOutput": "\n".join(lines)})
+
+
+def showGenes():
+    """Genes associated with the selected trait."""
+    MYTRAIT = os.getenv('currentTrait', '')
+
+    # `* 1` forces a numeric sort on databases built by older versions, where
+    # these columns were stored as text.
+    if hasFlag(MYENTRY, '--es'):
+        orderS = "ORDER BY OR_Bmax IS NULL, OR_Bmax * 1 DESC"
+    else:
+        orderS = "ORDER BY PapCount * 1 DESC, pMax * 1 DESC"
+
+    db = connect()
+    rs = db.execute(f"SELECT * FROM GeneTrait WHERE trait = ? {orderS}", (MYTRAIT,)).fetchall()
+    db.close()
+
+    if not rs:
+        noMatches(f"No genes recorded for {MYTRAIT}")
+        return
+
+    items, lines = [], []
+    myResLen = len(rs)
+
+    for countR, r in enumerate(rs, start=1):
+        GeneName = r['GeneName'] or r['gene']
+        Trait = r['trait']
+        papList = r['PapList']
+        locus = r['locus']
+        keyCount = r['KeyCount']
+        KeyList = r['KeyList']
+
+        PapCount = r['PapCount']
         paperString = "paper" if (PapCount == 1) else "papers"
-        
 
-        pMax = "{:.2f}".format(float(r[5]))
-        
-        if r[3]:
-            OR_BetaMin = f"{r[3]:.2f}"
-        else:
-            OR_BetaMin = ''
-    
-        if r[2]:
-            OR_BetaMax = f"{r[2]:.2f}"
-        else:
-            OR_BetaMax = ''
-    
-        
-        if keyCount == 1:
-            OR_B_block = OR_BetaMax
-        else:
-            OR_B_block = f'{OR_BetaMin}–{OR_BetaMax}'
+        pMax = fmt(r['pMax']) or 'NA'
+        OR_B_block = orBetaBlock(r['OR_Bmin'], r['OR_Bmax'])
 
-        itemString = f"{GeneName}: {PapCount} {paperString} ({papList}), pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)"
-        myBIGFONT = f"{MYTRAIT}-{GeneName} ({locus}): {PapCount} {paperString} ({papListAll}), pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)"
-        if countR == 1:
-            myTextOutput = f"**{MYTITLE}**\n"   
-            
-        myTextOutput = (myTextOutput 
-            + f"\t{countR}"
-            + ". "
-            + itemString
-            + "\n"
-                
-                )    
-        if countR == myResLen:
-            myTextOutput = f"{myTextOutput}{GWAS_REF}" 
-        
-    #### COMPILING OUTPUT    
-        result["items"].append({
-        "title": itemString,
-        "subtitle": f"{countR}/{myResLen} {Trait} {locus} - ⬆️ for GTEx",
-        "quicklookurl": f"https://gtexportal.org/home/gene/{GeneName}",
-        "arg": "",
-        "variables": {
-        "currentTITLE": itemString,
-        "mySource": "traitGene",
-        "myAction": "",
-        "myBIGFONT": myBIGFONT,
-        "myKEYlist": KeyList,
-        "myENTRY_Q": MYENTRY_Q
-        },
-        
-        "icon": {   
-        
-        "path": ""
-    }
+        itemString = (f"{GeneName}: {PapCount} {paperString} ({papList}), "
+                      f"pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)")
+        myBIGFONT = (f"{MYTRAIT}-{GeneName} ({locus}): {PapCount} {paperString} ({papList}), "
+                     f"pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)")
+
+        lines.append(f"\t{countR}. {itemString}")
+
+        #### COMPILING OUTPUT
+        items.append({
+            "title": itemString,
+            "subtitle": f"{countR}/{myResLen} {Trait} {locus} - ⬆️ for GTEx",
+            "quicklookurl": f"https://gtexportal.org/home/gene/{GeneName}",
+            "arg": "",
+            "variables": {
+                "currentTITLE": itemString,
+                "mySource": "traitGene",
+                "myAction": "",
+                "myBIGFONT": myBIGFONT,
+                "myKEYlist": KeyList,
+                "myENTRY_Q": MYENTRY_Q
+            },
+            "icon": {
+                "path": ""
+            }
         })
-        countR += 1  
 
-    
-            
-    result['variables'] = {"myTextOutput": myTextOutput}   
-    print (json.dumps(result))
+    emit(items, lines)
 
-def showTraits ():
-    MYGENE = os.getenv('currentTrait')
-    myTextOutput = ""
-    myResLen = 0
-    countR = 1
+
+def showTraits():
+    """Traits associated with the selected gene."""
+    MYGENE = os.getenv('currentTrait', '')  # gene name, i.e. the breadcrumb Alfred pre-fills
     if MYSOURCE == "geneMasterSearch":
-        MYGENES = os.getenv("currentGeneID")
+        MYGENES = os.getenv('currentGeneID')
     else:
         MYGENES = os.getenv('currentGenes')
 
-    
-    orderS = " ORDER BY PapCount*1 DESC, pMax DESC"
-    
-    argv1 = sys.argv[1] if len(sys.argv) > 1 else ""
-    MYSTRING = argv1.replace(MYGENE or '', '').strip() #to allow search refinement
-    
-    if MYSTRING:
-        SQL_SUBSTRING = f" AND trait LIKE '%{MYSTRING}%'"
-    else:
-        SQL_SUBSTRING = ''
-
-    if "--es" in MYENTRY:
-        orderS = " ORDER BY OR_Bmax*1 DESC"
-        #MYENTRY = MYENTRY.replace ('--es','')
-    
-    db = sqlite3.connect(INDEX_DB)
-    db.row_factory = sqlite3.Row
-    cursor = db.cursor()
-    sql = f"SELECT * FROM GeneTrait WHERE gene = '{MYGENES}' {SQL_SUBSTRING} {orderS}"
-    
-    cursor.execute(sql)
-    rs = db.execute(sql).fetchall()
-        
-
-    
-    if (rs):
-        myResLen = len (rs)
-        countR=1
-    
-    for r in rs:
-        
-        #GeneName = r[10] 
-        GeneName = r['GeneName']
-
-        Trait = r['trait'] 
-        
-        PapCount = r['PapCount']
-        paperString = "paper" if (PapCount == 1) else "papers"
-        KeyList = r['KeyList'] 
-        keyCount = r['KeyCount']
-        papList = papListAll = r['papList']
-        
-
-
-        pMax = "{:.2f}".format(float(r['pMax']))
-        
-        if r['OR_Bmin']:
-            OR_BetaMin = "{:.2f}".format(float (r['OR_Bmin']))
-        else:
-            OR_BetaMin = ''
-        if r['OR_Bmax']:
-            OR_BetaMax = "{:.2f}".format(float (r['OR_Bmax']))
-        else:
-            OR_BetaMax = ''
-        
-        if keyCount == 1:
-            OR_B_block = OR_BetaMax
-        else:
-            OR_B_block = f'{OR_BetaMin}–{OR_BetaMax}'
-
-        if countR == 1:
-            myTextOutput = f"**{MYTITLE}**\n"
-        
-        myTextOutput = (myTextOutput 
-            + f"\t{countR}. "
-            + f"{Trait}: {PapCount} {paperString} ({papList}), pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)\n"  
-                
-                )
-        if countR == myResLen:
-            myTextOutput = f"{myTextOutput}{GWAS_REF}" 
-
-        myBIGFONT = f"**{Trait}**-{GeneName}: {PapCount} {paperString} ({papListAll}), pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.) – {GWAS_REF}"
-    
-    #### COMPILING OUTPUT    
-        result["items"].append({
-        "title": f"{Trait}: {PapCount} {paperString} ({papList}), pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)",
-        "subtitle": f"{countR}/{myResLen} {Trait}",
-        "variables": {
-        "mySource": "geneTrait",
-        "myAction": "",
-        "myBIGFONT": myBIGFONT,
-        "myKEYlist": KeyList,
-        "myENTRY_Q": MYENTRY_Q
-        },    
-        "arg": "",
-        "icon": {  
-        
-        "path": ""
-    }
-        })
-        countR += 1  
-
-    
-            
-    result['variables'] = {"myTextOutput": myTextOutput}           
-    print (json.dumps(result))
-
-
-
-def showPapers (): 
-    orderS = " ORDER BY DATE DESC"
-    myTextOutput = ""
-    myResLen = 0
-    countR = 1
-    MYTITLE = os.getenv('currentTITLE')
-    MYKEYS = [k for k in (os.getenv('myKEYlist') or '').split(',') if k]
-    if not MYKEYS:
-        result["items"].append({
-            "title": "No association keys",
-            "subtitle": "Go back and pick a gene or trait first",
-            "valid": False,
-        })
-        print(json.dumps(result))
+    if not MYGENES:
+        alfredError("No gene selected", "Start again from the gene search")
         return
 
-    if "--es" in MYENTRY:
-        orderS = " ORDER BY 'OR or BETA'*1 DESC"
-        #MYENTRY = MYENTRY.replace ('--es','')
-    
-    
-    sql = "SELECT * FROM associations WHERE key IN ({seq})".format(seq=','.join(['?']*len(MYKEYS))) + orderS
-    cursor.execute(sql, MYKEYS)
-    rs = cursor.fetchall()
+    if hasFlag(MYENTRY, '--es'):
+        orderS = "ORDER BY OR_Bmax IS NULL, OR_Bmax * 1 DESC"
+    else:
+        orderS = "ORDER BY PapCount * 1 DESC, pMax * 1 DESC"
+
+    # allow search refinement: drop the breadcrumb and any flags from the typed query
+    MYSTRING = MYENTRY.replace(MYGENE, '') if MYGENE else MYENTRY
+    MYSTRING = stripFlags(MYSTRING).strip()
+
+    where, params = "gene = ?", [MYGENES]
+    if MYSTRING:
+        where += " AND trait LIKE ?"
+        params.append(f"%{MYSTRING}%")
+
+    db = connect()
+    rs = db.execute(f"SELECT * FROM GeneTrait WHERE {where} {orderS}", params).fetchall()
+    db.close()
+
+    if not rs:
+        noMatches(f"No traits for {MYGENE or MYGENES} matching '{MYSTRING}'"
+                  if MYSTRING else f"No traits recorded for {MYGENE or MYGENES}")
+        return
+
+    items, lines = [], []
+    myResLen = len(rs)
+
+    for countR, r in enumerate(rs, start=1):
+        GeneName = r['GeneName'] or r['gene']
+        Trait = r['trait']
+        PapCount = r['PapCount']
+        paperString = "paper" if (PapCount == 1) else "papers"
+        KeyList = r['KeyList']
+        keyCount = r['KeyCount']
+        papList = r['PapList']
+
+        pMax = fmt(r['pMax']) or 'NA'
+        OR_B_block = orBetaBlock(r['OR_Bmin'], r['OR_Bmax'])
+
+        itemString = (f"{Trait}: {PapCount} {paperString} ({papList}), "
+                      f"pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.)")
+        myBIGFONT = (f"**{Trait}**-{GeneName}: {PapCount} {paperString} ({papList}), "
+                     f"pMax: {pMax}, OR/B: {OR_B_block} ({keyCount} assoc.) – {GWAS_REF}")
+
+        lines.append(f"\t{countR}. {itemString}")
+
+        #### COMPILING OUTPUT
+        items.append({
+            "title": itemString,
+            "subtitle": f"{countR}/{myResLen} {Trait}",
+            "variables": {
+                "mySource": "geneTrait",
+                "myAction": "",
+                "myBIGFONT": myBIGFONT,
+                "myKEYlist": KeyList,
+                "myENTRY_Q": MYENTRY_Q
+            },
+            "arg": "",
+            "icon": {
+                "path": ""
+            }
+        })
+
+    emit(items, lines)
 
 
-    if (rs):
-        myResLen = len (rs)
-        countR=1
-    
-    for r in rs:
-        
-        Study = r[6] 
-        StudyDate = r[3] 
-        Trait = r[7] 
-        pubmedID = r[1]
-        mappedGene = r[14] 
-        if r[30]:
-            OR =  f'{float(r[30]):.2f}'
-        else:
-            OR = ''
-        
-        pVal = float(r[28])
-        myTitle = f"{Trait}-({mappedGene}), {OR} ({pVal:.1f})"
+def showPapers():
+    """Individual associations supporting the selected gene-trait pair."""
+    MYKEYS = []
+    for key in (os.getenv('myKEYlist') or '').split(','):
+        key = key.strip()
+        if key:
+            MYKEYS.append(int(key) if key.isdigit() else key)
+
+    if not MYKEYS:
+        noMatches("No associations to show")
+        return
+
+    if hasFlag(MYENTRY, '--es'):
+        orderS = 'ORDER BY "OR or BETA" IS NULL, "OR or BETA" * 1 DESC'
+    else:
+        orderS = "ORDER BY DATE DESC"
+
+    placeholders = ','.join(['?'] * len(MYKEYS))
+    # select by name: the associations table mirrors the catalog file, whose
+    # column order is not ours to rely on
+    sql = (f'SELECT PUBMEDID, DATE, STUDY, "DISEASE/TRAIT", MAPPED_GENE, '
+           f'PVALUE_MLOG, "OR or BETA" FROM associations '
+           f'WHERE key IN ({placeholders}) {orderS}')
+
+    db = connect()
+    rs = db.execute(sql, MYKEYS).fetchall()
+    db.close()
+
+    if not rs:
+        noMatches("No associations to show")
+        return
+
+    items, lines = [], []
+    myResLen = len(rs)
+
+    for countR, r in enumerate(rs, start=1):
+        Study = r['STUDY']
+        StudyDate = r['DATE'] or ''
+        Trait = r['DISEASE/TRAIT']
+        pubmedID = r['PUBMEDID']
+        mappedGene = r['MAPPED_GENE']
+
+        OR = fmt(r['OR or BETA'])
+        pVal = fmt(r['PVALUE_MLOG'], '.1f') or 'NA'
+
+        myTitle = f"{Trait}-({mappedGene}), {OR} ({pVal})"
         mySubTitle = f"{countR}/{myResLen}–{Study} ({pubmedID}, {StudyDate[0:4]})"
 
-        if countR == 1:
-            myTextOutput = f"**{MYTITLE}** \n"  
-         
-        myTextOutput = (myTextOutput 
-            + str(countR)
-            + ". "
-            + myTitle + " "
-            + pubmedID + ", " + StudyDate[0:4]
-            + "\n"
-            
-            )
-        if countR == myResLen:
-            myTextOutput = f"{myTextOutput}{GWAS_REF}" 
+        lines.append(f"{countR}. {myTitle} {pubmedID}, {StudyDate[0:4]}")
+
+        #### COMPILING OUTPUT
+        items.append({
+            "subtitle": mySubTitle,
+            "title": myTitle,
+            "variables": {
+                "mySource": BACK_SOURCE_MAP.get(MYSOURCE, MYSOURCE),
+                "myAction": "openPubMed",
+                "myPUBMED": pubmedID,
+                "myBIGFONT": mySubTitle,
+                "myENTRY_Q": MYENTRY_Q
+            },
+            "arg": "",
+            "icon": {
+                "path": ""
+            }
+        })
+
+    emit(items, lines)
 
 
-    #### COMPILING OUTPUT    
-        result["items"].append({
-        "subtitle": mySubTitle,
-        "title": myTitle,
-        
-         "variables": {
-        "mySource": BACK_SOURCE_MAP.get(MYSOURCE, MYSOURCE),
-        "myAction": "openPubMed",
-        "myPUBMED": pubmedID,
-        "myBIGFONT": mySubTitle,
-        "myENTRY_Q": MYENTRY_Q
-        },            
-        "arg": "",
-        "icon": {   
-        
-        "path": ""
-    }
-        }) 
-        countR += 1  
-
-
-    
-    result['variables'] = {"myTextOutput": myTextOutput}        
-                
-    print (json.dumps(result))
-
-    
+HANDLERS = {
+    "GWT": showGenes,          # source is the GWAS trait search
+    "GWG": showTraits,         # source is the GWAS gene search
+    "geneMasterSearch": showTraits,
+    "geneTrait": showPapers,   # to get papers after gene > trait
+    "traitGene": showPapers,   # to get papers after trait > gene
+    "genePap": showPapers,
+}
 
 
 def main():
+    requireDatabase()
 
-    if MYSOURCE == "GWT": #source is the GWAS trait search
-        showGenes ()
+    handler = HANDLERS.get(MYSOURCE)
+    if handler is None:
+        alfredError("Nothing to show", f"Unknown source: {MYSOURCE or '(none)'}")
+        return
 
-    elif MYSOURCE == "GWG": #source is the GWAS gene search
-        showTraits ()
-
-    elif MYSOURCE == "geneTrait": # to get papers after gene > trait
-        showPapers ()
-
-    elif MYSOURCE == "traitGene": #to get papers after trait >gene
-        showPapers ()
-
-    elif MYSOURCE == "genePap":
-        showPapers ()
+    handler()
 
 
 if __name__ == '__main__':
-    main ()
-
-
-
-
+    try:
+        main()
+    except Exception as err:
+        traceback.print_exc(file=sys.stderr)
+        alfredError(f"Error: {type(err).__name__}", str(err))

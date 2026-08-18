@@ -7,3 +7,11 @@ bigFiles
 olderCode
 logs
 *.tsv
+
+# GWAS catalog downloads (fetched by ::rebuild into the workflow data folder)
+associations_*.tsv
+index.db
+index.db.building
+
+# editor / working leftovers
+*.bak
