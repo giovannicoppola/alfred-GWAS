@@ -14,11 +14,11 @@
 
 
 import os
-import sqlite3
 import sys
 import traceback
 
-from config import INDEX_DB, alfredError, alfredItems, requireDatabase
+from config import (alfredError, alfredItems, cappedQuery, readOnly,
+                    requireDatabase, truncationItem)
 
 MYSOURCE = os.getenv('mySource', '')
 MYENTRY_Q = os.getenv('myENTRY_Q', '')
@@ -49,13 +49,10 @@ def queryGenes():
 
     MYQUERY = "%" + MYINPUT + "%"
 
-    db = sqlite3.connect(INDEX_DB)
-    db.row_factory = sqlite3.Row
-
+    db = readOnly()
     # COALESCE keeps genes with no annotation searchable by their Ensembl id
-    rs = db.execute(f"""SELECT *
-        FROM geneCounts
-        WHERE COALESCE(searchField, gene) LIKE ? {orderS}""", (MYQUERY,)).fetchall()
+    rs, total = cappedQuery(db, "gene, nTraits, GeneName, nPapers", "geneCounts",
+                            "COALESCE(searchField, gene) LIKE ?", [MYQUERY], orderS)
     db.close()
 
     if not rs:
@@ -63,7 +60,6 @@ def queryGenes():
         return
 
     items = []
-    myResLen = len(rs)
 
     for countR, r in enumerate(rs, start=1):
 
@@ -76,7 +72,7 @@ def queryGenes():
         TraitCount = r['nTraits']
         traitString = "trait" if (TraitCount == 1) else "traits"
 
-        subtitleString = (f"{countR}/{myResLen}"
+        subtitleString = (f"{countR}/{total:,}"
                           f" – associated with {TraitCount:,} {traitString}, "
                           f"from {PapersCount:,} {paperString}")
 
@@ -101,6 +97,9 @@ def queryGenes():
                 "path": ""
             }
         })
+
+    if total > len(rs):
+        items.append(truncationItem(len(rs), total))
 
     alfredItems(items)
 

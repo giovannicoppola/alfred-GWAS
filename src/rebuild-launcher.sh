@@ -14,9 +14,20 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 WF_DATA="${alfred_workflow_data:-.}"
 LOG_FILE="$WF_DATA/rebuild.log"
 DB_FILE="$WF_DATA/index.db"
+PID_FILE="$WF_DATA/rebuild.pid"
 
-# Check if build is already running
-RUNNING_PID=$(pgrep -f "build-GWAS-index.py" | head -1)
+# Check if a build we started is still running. A pid file is used rather than
+# pgrep, which also matches editors and log tails holding the script name.
+RUNNING_PID=""
+if [ -f "$PID_FILE" ]; then
+    CANDIDATE=$(cat "$PID_FILE" 2>/dev/null)
+    if [ -n "$CANDIDATE" ] && kill -0 "$CANDIDATE" 2>/dev/null &&
+       ps -p "$CANDIDATE" -o command= 2>/dev/null | grep -q "build-GWAS-index.py"; then
+        RUNNING_PID="$CANDIDATE"
+    else
+        rm -f "$PID_FILE"   # stale entry from a build that has since exited
+    fi
+fi
 
 if [ -n "$RUNNING_PID" ]; then
     ELAPSED=$(ps -o etime= -p "$RUNNING_PID" 2>/dev/null | xargs)
@@ -97,6 +108,7 @@ fi
 cd "$SCRIPT_DIR"
 nohup "$PYTHON" build-GWAS-index.py > "$LOG_FILE" 2>&1 &
 PID=$!
+echo "$PID" > "$PID_FILE"
 disown $PID 2>/dev/null
 
 cat <<EOF

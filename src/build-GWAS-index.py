@@ -197,14 +197,14 @@ def associations_table(dbPath, DATA_FILE):
     return myData
 
 
-def unique_set_of_comma_separated_values(s):
-    return ','.join(set(s.split(',')))
+def count_comma_separated(column):
+    """Entries per row in a comma-joined column, counting an empty string as zero.
 
-def count_comma_separated_elements(s):
-    if s:
-        return len(s.split(','))
-    else:
-        return 0
+    Plain `str.count(',') + 1` reports 1 for an empty string, which would
+    credit a trait or paper with a gene it does not have.
+    """
+    filled = column.fillna('')
+    return (filled.str.count(',') + 1).where(filled.astype(bool), 0)
 
 def createTraitCounts (myDataFrame, dbPath):
 
@@ -248,7 +248,7 @@ def createTraitCounts (myDataFrame, dbPath):
     gene_by_trait = exploded.groupby('MAPPED_TRAIT')['ImplicatedGenes'].agg(
         ImplicatedGenes=lambda x: ','.join(set(x))
     ).reset_index()
-    gene_by_trait['ImplicatedGenes_count'] = gene_by_trait['ImplicatedGenes'].str.count(',') + 1
+    gene_by_trait['ImplicatedGenes_count'] = count_comma_separated(gene_by_trait['ImplicatedGenes'])
 
     merged_data = gene_by_trait.merge(pub_agg, on='MAPPED_TRAIT')
 
@@ -283,8 +283,7 @@ def createTraitCounts (myDataFrame, dbPath):
         lambda x: ','.join(set(x))
     ).reset_index()
     pub_genes.columns = ['PUBMEDID', 'ImplicatedGenes']
-    pub_genes['ImplicatedGenes'] = pub_genes['ImplicatedGenes'].apply(unique_set_of_comma_separated_values)
-    pub_genes['ImplicatedGenes_count'] = pub_genes['ImplicatedGenes'].str.count(',') + 1
+    pub_genes['ImplicatedGenes_count'] = count_comma_separated(pub_genes['ImplicatedGenes'])
 
     cursor.execute(f"DROP TABLE IF EXISTS paperCounts")
     pub_genes.to_sql("paperCounts", con, index=False)
@@ -293,7 +292,7 @@ def createTraitCounts (myDataFrame, dbPath):
     countPub = exploded.groupby('ImplicatedGenes')['PUBMEDID'].agg(
         PUBMEDID=lambda x: ','.join(set(x.astype(str)))
     ).reset_index()
-    countPub['nPapers'] = countPub['PUBMEDID'].str.count(',') + 1
+    countPub['nPapers'] = count_comma_separated(countPub['PUBMEDID'])
 
     geneCounts = geneCounts.merge(countPub, left_on='gene', right_on='ImplicatedGenes', how='left')
     geneCounts = geneCounts.drop('ImplicatedGenes', axis=1)
@@ -323,8 +322,8 @@ def createTraitCounts (myDataFrame, dbPath):
     ).reset_index()
     pair_dataAGG.columns = ['trait', 'gene', 'OR_Bmax', 'OR_Bmin', 'KeyList', 'pMax', 'PapList', 'locus']
 
-    pair_dataAGG['KeyCount'] = pair_dataAGG['KeyList'].str.count(',') + 1
-    pair_dataAGG['PapCount'] = pair_dataAGG['PapList'].str.count(',') + 1
+    pair_dataAGG['KeyCount'] = count_comma_separated(pair_dataAGG['KeyList'])
+    pair_dataAGG['PapCount'] = count_comma_separated(pair_dataAGG['PapList'])
 
     pair_dataAGG = pair_dataAGG.merge(geneAnnotation, left_on='gene', right_on='EnsemblGeneId', how='left')
     pair_dataAGG = pair_dataAGG.drop('EnsemblGeneId', axis=1)
@@ -373,7 +372,7 @@ def main(args=None):
     # Access the file_name argument, or download if not provided
     DATA_FILE = args['<file_name>']
     if DATA_FILE is None:
-        DATA_FILE, already_existed = download_gwas_catalog()
+        DATA_FILE, _ = download_gwas_catalog()
 
     if args.get('--verbose'):
         logging.basicConfig(level=logging.INFO)

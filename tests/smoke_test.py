@@ -35,6 +35,8 @@ ASSOCIATION_COLUMNS = [
 ]
 
 APOSTROPHE_TRAIT = "Crohn's disease"
+WIDE_TRAIT = "bone mineral density"
+WIDE_GENES = 250  # more than the MAX_RESULTS cap, so truncation is exercised
 
 
 def buildFixture(path):
@@ -52,6 +54,10 @@ def buildFixture(path):
         # a gene with no annotation row, as ~40% of the catalog is
         ('ENSG00000002', 1, None, None, '789', 1),
     ])
+    db.executemany("INSERT INTO geneCounts VALUES (?,?,?,?,?,?)", [
+        (f'ENSGWIDE{n:05d}', 1, f'WIDE{n}', f'WIDE{n},ENSGWIDE{n:05d}', '999', 1)
+        for n in range(WIDE_GENES)
+    ])
 
     db.execute("""CREATE TABLE traitCounts
                   (MAPPED_TRAIT TEXT, ImplicatedGenes TEXT, ImplicatedGenes_count INTEGER,
@@ -59,6 +65,7 @@ def buildFixture(path):
     db.executemany("INSERT INTO traitCounts VALUES (?,?,?,?,?)", [
         (APOSTROPHE_TRAIT, 'ENSG00000001', 1, '123', 1),
         ('glucose measurement', 'ENSG00000002', 1, '789', 1),
+        (WIDE_TRAIT, 'many', WIDE_GENES, '999', 1),
     ])
 
     db.execute("""CREATE TABLE GeneTrait
@@ -71,6 +78,11 @@ def buildFixture(path):
         # NULL effect size and NULL p-value, on a gene with no annotation
         ('glucose measurement', 'ENSG00000002', None, None, '3', None, '789',
          '1p31', 1, 1, None, None),
+    ])
+    db.executemany("INSERT INTO GeneTrait VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [
+        (WIDE_TRAIT, f'ENSGWIDE{n:05d}', 1.0, 1.0, '1', 5.0, '999', '1p1', 1, 1,
+         f'WIDE{n}', f'WIDE{n},ENSGWIDE{n:05d}')
+        for n in range(WIDE_GENES)
     ])
 
     columns = ','.join(f'"{c}" TEXT' for c in ASSOCIATION_COLUMNS)
@@ -176,9 +188,9 @@ def main():
         check("gene search survives an apostrophe in the query",
               run('query-gene.py', "Crohn's"), title_contains='No matches')
         check("gene search treats a bare --p as a sort flag, not a search term",
-              run('query-gene.py', '--p'), expect_items=2)
+              run('query-gene.py', '--p'), expect_items=201, absent='No matches')
         check("gene search handles no argument",
-              run('query-gene.py', ''), expect_items=2)
+              run('query-gene.py', ''), expect_items=201, absent='No matches')
 
         # --- trait search
         check("trait search finds a trait containing an apostrophe",
@@ -234,6 +246,23 @@ def main():
         check("papers list handles an empty key list",
               run('query-items.py', '', mySource='geneTrait', myKEYlist='',
                   currentTITLE='NOD2'), title_contains='No matches')
+
+        # --- capped result lists
+        check("a broad gene search is capped and says how many more there are",
+              run('query-gene.py', 'WIDE'), expect_items=201, title_contains='more')
+        check("a broad trait drill-down is capped",
+              run('query-items.py', '', mySource='GWT', currentTrait=WIDE_TRAIT,
+                  currentTITLE=WIDE_TRAIT), expect_items=201, title_contains='more')
+        check("the trait drill-down can be refined, which lifts the cap",
+              run('query-items.py', f'{WIDE_TRAIT} WIDE249', mySource='GWT',
+                  currentTrait=WIDE_TRAIT, currentTITLE=WIDE_TRAIT),
+              expect_items=1, title_contains='WIDE249')
+        check("a refinement matching nothing reports it instead of crashing",
+              run('query-items.py', f'{WIDE_TRAIT} zzzz', mySource='GWT',
+                  currentTrait=WIDE_TRAIT, currentTITLE=WIDE_TRAIT),
+              title_contains='No matches')
+        check("an uncapped search carries no truncation notice",
+              run('query-gene.py', 'NOD2'), expect_items=1, absent='more')
 
         # --- missing database
         empty = tempfile.mkdtemp(prefix='alfred-gwas-empty-')

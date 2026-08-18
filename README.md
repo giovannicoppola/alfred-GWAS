@@ -53,8 +53,8 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 
 	
 ## Querying by trait 👤
-- launch with keyword (default: `gwt`) or custom hotkey. Results will include a gene name, the number of associated traits, and the number of papers. 
-- once a gene is selected, associated traits are shown, including for each trait the range of OR (or beta), minimum p-value, number of papers supporting the association, and number of associated loci. Alfred's QuickOutlook (`shift`) will show the expression profile from [GTEx](https://gtexportal.org/home/). Hit `shift` again to close. 
+- launch with keyword (default: `gwt`) or custom hotkey, enter a search string. Results will include a trait name, the number of associated genes, and the number of papers.
+- once a trait is selected, associated genes are shown, including for each gene the range of OR (or beta), minimum p-value, number of papers supporting the association, and number of associated loci. It is possible to refine the list of associated genes by entering an additional search string. Alfred's QuickOutlook (`shift`) will show the expression profile from [GTEx](https://gtexportal.org/home/). Hit `shift` again to close. 
 - output is sorted by number of supporting papers. Adding `--es` to the search string will sort by largest reported effect size (OR or beta). 
 	- `ctrl-enter` will show the currently selected gene-trait pair in large font, and copy to clipboard
 	- `cmd-enter` will copy the entire gene-trait list to clipboard
@@ -77,7 +77,7 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 <h1 id="known-issues">Limitations & known issues ⚠️</h1>
 
 - gene search matches on gene symbols, synonyms and Ensembl ids. Genes that carry no annotation in the bundled lookup table are listed and searchable under their Ensembl id only.
-- searches match anywhere in the name, so very short queries can return thousands of results.
+- long lists are capped at the 200 best-ranked entries, with a closing item showing how many more matched. Type more of the name to narrow the list.
 - let me know if you see anything else!
 
 
@@ -89,7 +89,7 @@ src="https://img.shields.io/github/downloads/giovannicoppola/alfred-GWAS/total?c
 	
 <h1 id="changelog">Changelog 🧰</h1>
 
-- version 0.5: `::rebuild` keyword with background download of the current catalog release; fixed drill-down on traits containing an apostrophe (e.g. Crohn's disease); genes with no annotation are no longer hidden from search; empty result sets and missing values no longer break a search; the rebuild no longer replaces the database until it has succeeded.
+- version 0.5: `::rebuild` keyword with background download of the current catalog release; fixed drill-down on traits containing an apostrophe (e.g. Crohn's disease); genes with no annotation are no longer hidden from search; empty result sets and missing values no longer break a search; the rebuild no longer replaces the database until it has succeeded; long result lists are capped and the gene list of a trait can now be refined.
 - 05-17-2023: version 0.4
 - 03-25-2023: version 0.3
 - 05-31-2022: version 0.2

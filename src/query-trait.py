@@ -16,11 +16,11 @@
 
 
 import os
-import sqlite3
 import sys
 import traceback
 
-from config import INDEX_DB, alfredError, alfredItems, requireDatabase
+from config import (alfredError, alfredItems, cappedQuery, readOnly,
+                    requireDatabase, truncationItem)
 
 MYENTRY_Q = os.getenv('myENTRY_Q', '')  # this is breadcrumbs to enable the 'back' feature
 MYSOURCE = os.getenv('mySource', '')
@@ -38,13 +38,11 @@ def queryTraits():
     MYINPUT = (MYINPUT or '').strip()
     MYQUERY = "%" + MYINPUT + "%"
 
-    db = sqlite3.connect(INDEX_DB)
-    db.row_factory = sqlite3.Row
-
-    rs = db.execute("""SELECT *
-            FROM traitCounts
-            WHERE MAPPED_TRAIT LIKE ?
-            ORDER BY papers_count DESC, ImplicatedGenes_count DESC""", (MYQUERY,)).fetchall()
+    db = readOnly()
+    rs, total = cappedQuery(
+        db, "MAPPED_TRAIT, ImplicatedGenes_count, papers_count",
+        "traitCounts", "MAPPED_TRAIT LIKE ?", [MYQUERY],
+        "ORDER BY papers_count DESC, ImplicatedGenes_count DESC")
     db.close()
 
     if not rs:
@@ -52,7 +50,6 @@ def queryTraits():
         return
 
     items = []
-    myResLen = len(rs)
 
     for countR, r in enumerate(rs, start=1):
 
@@ -61,11 +58,10 @@ def queryTraits():
         PapersCount = r['papers_count']
         paperString = "paper" if (PapersCount == 1) else "papers"
 
-        ImplicatedGenes = r['ImplicatedGenes']
         GeneCount = r['ImplicatedGenes_count']
         geneString = "gene" if (GeneCount == 1) else "genes"
 
-        subtitleString = (f"{countR}/{myResLen}"
+        subtitleString = (f"{countR}/{total:,}"
                           f" – {GeneCount} {geneString}, from {PapersCount} {paperString}")
 
         bigText = f"{FeatureName} – {GeneCount:,} {geneString}, from {PapersCount:,} {paperString}"
@@ -81,7 +77,6 @@ def queryTraits():
             "variables": {
                 "currentTrait": FeatureName,
                 "myENTRY_Q": MYINPUT,
-                "currentGenes": ImplicatedGenes,
                 "currentTITLE": titleString,
                 "bigText": bigText,
                 "mySource": "GWT"
@@ -91,6 +86,9 @@ def queryTraits():
                 "path": ""
             }
         })
+
+    if total > len(rs):
+        items.append(truncationItem(len(rs), total))
 
     alfredItems(items)
 

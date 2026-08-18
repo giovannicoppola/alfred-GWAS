@@ -8,11 +8,11 @@
 # W22Q2 – 151 ➡️ 213 – 20 ❇️ 345
 
 import os
-import sqlite3
 import sys
 import traceback
 
-from config import INDEX_DB, GWAS_REF, alfredError, alfredItems, requireDatabase
+from config import (GWAS_REF, alfredError, alfredItems, cappedQuery, readOnly,
+                    requireDatabase, truncationItem)
 
 
 MYSOURCE = os.getenv('mySource', '')
@@ -29,12 +29,6 @@ BACK_SOURCE_MAP = {
     "geneTrait": "GWG",   # gene→trait→papers: back to trait list (needs GWG)
     "genePap": "GWG",     # gene→papers: back to trait list (needs GWG)
 }
-
-
-def connect():
-    db = sqlite3.connect(INDEX_DB)
-    db.row_factory = sqlite3.Row
-    return db
 
 
 def hasFlag(text, flag):
@@ -78,10 +72,21 @@ def noMatches(subtitle="Try a different query"):
     }], {"myTextOutput": ""})
 
 
-def emit(items, lines):
+def emit(items, lines, total):
     """Print the item list along with the plain-text version used by the copy action."""
+    shown = len(items)
+    if total > shown:
+        items = items + [truncationItem(shown, total)]
+        lines = lines + [f"\t… and {total - shown:,} more (showing the first {shown:,})"]
+
     lines = [f"**{MYTITLE}**"] + lines + [GWAS_REF]
     alfredItems(items, {"myTextOutput": "\n".join(lines)})
+
+
+def refinement(breadcrumb):
+    """The part of the typed query that is a search, not the item Alfred pre-filled."""
+    typed = MYENTRY.replace(breadcrumb, '') if breadcrumb else MYENTRY
+    return stripFlags(typed).strip()
 
 
 def showGenes():
@@ -95,16 +100,24 @@ def showGenes():
     else:
         orderS = "ORDER BY PapCount * 1 DESC, pMax * 1 DESC"
 
-    db = connect()
-    rs = db.execute(f"SELECT * FROM GeneTrait WHERE trait = ? {orderS}", (MYTRAIT,)).fetchall()
+    # allow search refinement, so the capped list never hides a gene
+    MYSTRING = refinement(MYTRAIT)
+
+    where, params = "trait = ?", [MYTRAIT]
+    if MYSTRING:
+        where += " AND COALESCE(searchField, gene) LIKE ?"
+        params.append(f"%{MYSTRING}%")
+
+    db = readOnly()
+    rs, total = cappedQuery(db, "*", "GeneTrait", where, params, orderS)
     db.close()
 
     if not rs:
-        noMatches(f"No genes recorded for {MYTRAIT}")
+        noMatches(f"No genes for {MYTRAIT} matching '{MYSTRING}'"
+                  if MYSTRING else f"No genes recorded for {MYTRAIT}")
         return
 
     items, lines = [], []
-    myResLen = len(rs)
 
     for countR, r in enumerate(rs, start=1):
         GeneName = r['GeneName'] or r['gene']
@@ -130,7 +143,7 @@ def showGenes():
         #### COMPILING OUTPUT
         items.append({
             "title": itemString,
-            "subtitle": f"{countR}/{myResLen} {Trait} {locus} - ⬆️ for GTEx",
+            "subtitle": f"{countR}/{total:,} {Trait} {locus} - ⬆️ for GTEx",
             "quicklookurl": f"https://gtexportal.org/home/gene/{GeneName}",
             "arg": "",
             "variables": {
@@ -146,7 +159,7 @@ def showGenes():
             }
         })
 
-    emit(items, lines)
+    emit(items, lines, total)
 
 
 def showTraits():
@@ -167,16 +180,15 @@ def showTraits():
         orderS = "ORDER BY PapCount * 1 DESC, pMax * 1 DESC"
 
     # allow search refinement: drop the breadcrumb and any flags from the typed query
-    MYSTRING = MYENTRY.replace(MYGENE, '') if MYGENE else MYENTRY
-    MYSTRING = stripFlags(MYSTRING).strip()
+    MYSTRING = refinement(MYGENE)
 
     where, params = "gene = ?", [MYGENES]
     if MYSTRING:
         where += " AND trait LIKE ?"
         params.append(f"%{MYSTRING}%")
 
-    db = connect()
-    rs = db.execute(f"SELECT * FROM GeneTrait WHERE {where} {orderS}", params).fetchall()
+    db = readOnly()
+    rs, total = cappedQuery(db, "*", "GeneTrait", where, params, orderS)
     db.close()
 
     if not rs:
@@ -185,7 +197,6 @@ def showTraits():
         return
 
     items, lines = [], []
-    myResLen = len(rs)
 
     for countR, r in enumerate(rs, start=1):
         GeneName = r['GeneName'] or r['gene']
@@ -209,7 +220,7 @@ def showTraits():
         #### COMPILING OUTPUT
         items.append({
             "title": itemString,
-            "subtitle": f"{countR}/{myResLen} {Trait}",
+            "subtitle": f"{countR}/{total:,} {Trait}",
             "variables": {
                 "mySource": "geneTrait",
                 "myAction": "",
@@ -223,7 +234,7 @@ def showTraits():
             }
         })
 
-    emit(items, lines)
+    emit(items, lines, total)
 
 
 def showPapers():
@@ -246,12 +257,12 @@ def showPapers():
     placeholders = ','.join(['?'] * len(MYKEYS))
     # select by name: the associations table mirrors the catalog file, whose
     # column order is not ours to rely on
-    sql = (f'SELECT PUBMEDID, DATE, STUDY, "DISEASE/TRAIT", MAPPED_GENE, '
-           f'PVALUE_MLOG, "OR or BETA" FROM associations '
-           f'WHERE key IN ({placeholders}) {orderS}')
+    columns = ('PUBMEDID, DATE, STUDY, "DISEASE/TRAIT", MAPPED_GENE, '
+               'PVALUE_MLOG, "OR or BETA"')
 
-    db = connect()
-    rs = db.execute(sql, MYKEYS).fetchall()
+    db = readOnly()
+    rs, total = cappedQuery(db, columns, "associations",
+                            f"key IN ({placeholders})", MYKEYS, orderS)
     db.close()
 
     if not rs:
@@ -259,7 +270,6 @@ def showPapers():
         return
 
     items, lines = [], []
-    myResLen = len(rs)
 
     for countR, r in enumerate(rs, start=1):
         Study = r['STUDY']
@@ -272,7 +282,7 @@ def showPapers():
         pVal = fmt(r['PVALUE_MLOG'], '.1f') or 'NA'
 
         myTitle = f"{Trait}-({mappedGene}), {OR} ({pVal})"
-        mySubTitle = f"{countR}/{myResLen}–{Study} ({pubmedID}, {StudyDate[0:4]})"
+        mySubTitle = f"{countR}/{total:,}–{Study} ({pubmedID}, {StudyDate[0:4]})"
 
         lines.append(f"{countR}. {myTitle} {pubmedID}, {StudyDate[0:4]}")
 
@@ -293,7 +303,7 @@ def showPapers():
             }
         })
 
-    emit(items, lines)
+    emit(items, lines, total)
 
 
 HANDLERS = {

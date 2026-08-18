@@ -1,0 +1,30 @@
+name: tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # the query scripts run under whatever python3 the user's Mac provides
+        python-version: ['3.9', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile every script
+        run: python -m compileall -q src tests
+
+      - name: Check shell syntax
+        run: bash -n src/rebuild-launcher.sh
+
+      - name: Run the smoke tests
+        run: python tests/smoke_test.py
