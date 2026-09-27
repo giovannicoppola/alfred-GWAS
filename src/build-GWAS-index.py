@@ -129,6 +129,26 @@ def download_gwas_catalog():
     return dest_tsv, False
 
 
+def remove_downloads():
+    """Delete the catalog TSVs ::rebuild downloaded, once the index is built.
+
+    Each catalog release has a new file name, so without this every rebuild
+    leaves another ~700 MB file behind. Only runs in Alfred's data folder: run
+    by hand, WF_DATA defaults to '.', which may hold a TSV passed in on purpose.
+    Returns the number of MB freed.
+    """
+    if not os.getenv('alfred_workflow_data'):
+        return 0
+    freed = 0
+    for name in os.listdir(WF_DATA):
+        if name.endswith('.tsv') and name.startswith(('gwas_catalog_', 'associations_')):
+            path = os.path.join(WF_DATA, name)
+            freed += os.path.getsize(path)
+            os.remove(path)
+            print(f"\tremoved downloaded catalog: {name}", file=sys.stderr)
+    return freed / (1024*1024)
+
+
 def log(s, *args):
     if args:
         s = s % args
@@ -371,7 +391,8 @@ def main(args=None):
     args = docopt(__doc__, version=__version__)
     # Access the file_name argument, or download if not provided
     DATA_FILE = args['<file_name>']
-    if DATA_FILE is None:
+    downloaded = DATA_FILE is None  # never delete a file the user passed in
+    if downloaded:
         DATA_FILE, _ = download_gwas_catalog()
 
     if args.get('--verbose'):
@@ -472,6 +493,13 @@ def main(args=None):
         logF (f"| **Total** | **{main_timeElapsed:.1f}s ({main_timeElapsed/60:.1f} min)** |", file_name =  LOG_FILE)
 
         print(f"\nTotal script duration: {round (main_timeElapsed,2)} seconds", file=sys.stderr)
+
+        # the index is built: the downloaded catalog is no longer needed
+        # (kept on failure above, so a retry can skip the download)
+        if downloaded:
+            freed_mb = remove_downloads()
+            if freed_mb:
+                logF (f"\nRemoved downloaded catalog file(s): {freed_mb:.0f} MB freed", file_name =  LOG_FILE)
 
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
