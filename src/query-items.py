@@ -21,7 +21,7 @@ cursor = db.cursor()
 result = {"items": [], "variables":{}}
 
 MYSOURCE = os.getenv('mySource')
-MYENTRY = sys.argv[1]
+MYENTRY = sys.argv[1] if len(sys.argv) > 1 else ""
 MYTITLE = os.getenv('currentTITLE')
 MYENTRY_Q = os.getenv('myENTRY_Q', '')
 
@@ -34,6 +34,9 @@ BACK_SOURCE_MAP = {
 
 def showGenes ():
     MYTRAIT = os.getenv('currentTrait')
+    myTextOutput = ""
+    myResLen = 0
+    countR = 1
     
     #MYGENES = os.getenv('currentGenes')
     orderS = " ORDER BY PapCount*1 DESC, pMax*1 DESC"
@@ -135,7 +138,10 @@ def showGenes ():
 
 def showTraits ():
     MYGENE = os.getenv('currentTrait')
-    if "mySource" == "geneMasterSearch":
+    myTextOutput = ""
+    myResLen = 0
+    countR = 1
+    if MYSOURCE == "geneMasterSearch":
         MYGENES = os.getenv("currentGeneID")
     else:
         MYGENES = os.getenv('currentGenes')
@@ -143,7 +149,8 @@ def showTraits ():
     
     orderS = " ORDER BY PapCount*1 DESC, pMax DESC"
     
-    MYSTRING = sys.argv[1].replace(MYGENE,'').strip() #to allow search refinement
+    argv1 = sys.argv[1] if len(sys.argv) > 1 else ""
+    MYSTRING = argv1.replace(MYGENE or '', '').strip() #to allow search refinement
     
     if MYSTRING:
         SQL_SUBSTRING = f" AND trait LIKE '%{MYSTRING}%'"
@@ -240,9 +247,19 @@ def showTraits ():
 
 def showPapers (): 
     orderS = " ORDER BY DATE DESC"
+    myTextOutput = ""
+    myResLen = 0
+    countR = 1
     MYTITLE = os.getenv('currentTITLE')
-    MYKEYS = os.getenv('myKEYlist')
-    MYKEYS = MYKEYS.split(',')
+    MYKEYS = [k for k in (os.getenv('myKEYlist') or '').split(',') if k]
+    if not MYKEYS:
+        result["items"].append({
+            "title": "No association keys",
+            "subtitle": "Go back and pick a gene or trait first",
+            "valid": False,
+        })
+        print(json.dumps(result))
+        return
 
     if "--es" in MYENTRY:
         orderS = " ORDER BY 'OR or BETA'*1 DESC"

@@ -5,14 +5,14 @@ import os
 import sys
 import zipfile
 import sqlite3
+import tempfile
 
 
 
-WF_DATA = os.getenv('alfred_workflow_data')
-INDEX_DB = WF_DATA + '/index.db'
+WF_DATA = os.getenv('alfred_workflow_data') or os.path.join(tempfile.gettempdir(), 'alfred-gwas')
+INDEX_DB = os.path.join(WF_DATA, 'index.db')
 
-if not os.path.exists(WF_DATA):
-    os.makedirs(WF_DATA)
+os.makedirs(WF_DATA, exist_ok=True)
 
 def log(s, *args):
     if args:
@@ -35,18 +35,48 @@ def checkDatabase():
         os.remove (DB_ZIPPED)
 
 
+def databaseReady():
+    """True once ::rebuild has built the index. Checks for a table, not just
+    the file: an earlier connect can leave an empty index.db behind."""
+    if not os.path.exists(INDEX_DB) or os.path.getsize(INDEX_DB) == 0:
+        return False
+    try:
+        conn = sqlite3.connect(INDEX_DB)
+        found = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' "
+                             "AND name='GeneTrait'").fetchone()
+        conn.close()
+        return found is not None
+    except sqlite3.Error:
+        return False
+
+
+# shown by the gene and trait searches until the database has been built
+NOT_BUILT = {"items": [{
+    "title": "GWAS database not built yet",
+    "subtitle": "Run the ::rebuild keyword to download the GWAS Catalog and build it",
+    "valid": False,
+}]}
+
+
 def fetchColophon():
-    
+
+    if not os.path.exists(INDEX_DB):  # don't create an empty index.db
+        return "unknown"
     # Importing the gene annotation table from the gene lookup DB
     conn = sqlite3.connect(INDEX_DB)
     cursor = conn.cursor()
     cursor.execute(f"SELECT * FROM colophon")
     rs = cursor.fetchone()
     conn.close()
-    return rs [0]
+    if not rs:
+        return "unknown"
+    return rs[0]
 
 
 
-checkDatabase()
-colophon = fetchColophon()
+try:
+    checkDatabase()
+    colophon = fetchColophon()
+except Exception:
+    colophon = "unknown"
 GWAS_REF = f"ref: GWAS catalog, {colophon}"

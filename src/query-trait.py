@@ -21,20 +21,24 @@ import sys
 import os
 
 
-from config import INDEX_DB, log
+from config import INDEX_DB, log, databaseReady, NOT_BUILT
 MYENTRY_Q = os.getenv('myENTRY_Q') # this is breadcrumbs to enable the 'back' feature
 MYSOURCE = os.getenv('mySource')
 
 def queryTraits ():
+    if not databaseReady():
+        print(json.dumps(NOT_BUILT))
+        return
     db = sqlite3.connect(INDEX_DB)
     cursor = db.cursor()
 
     
-    if MYSOURCE in ["traitGene"] and sys.argv[1] == '':
-        MYINPUT= MYENTRY_Q
+    argv1 = sys.argv[1] if len(sys.argv) > 1 else ""
+    if MYSOURCE in ["traitGene"] and argv1 == '':
+        MYINPUT= MYENTRY_Q or ""
 
     else:
-        MYINPUT= sys.argv[1]
+        MYINPUT= argv1
 
 
     

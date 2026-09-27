@@ -18,26 +18,30 @@ import json
 import sys
 import os
 
-from config import INDEX_DB, log
+from config import INDEX_DB, log, databaseReady, NOT_BUILT
 MYSOURCE = os.getenv('mySource')
 MYENTRY_Q = os.getenv('myENTRY_Q')
 MYGENE = os.getenv('currentGeneID')
 
 def queryGenes ():
+    if not databaseReady():
+        print(json.dumps(NOT_BUILT))
+        return
     result = {"items": [], "variables":{}}
 
 
     db = sqlite3.connect(INDEX_DB)
     cursor = db.cursor()
 
-    if MYSOURCE in ["GWG"] and sys.argv[1] == '':
-        MYINPUT= MYENTRY_Q
+    argv1 = sys.argv[1] if len(sys.argv) > 1 else ""
+    if MYSOURCE in ["GWG"] and argv1 == '':
+        MYINPUT= MYENTRY_Q or ""
 
     elif MYSOURCE in ["geneMasterSearch"]:
-        MYINPUT= MYGENE
+        MYINPUT= MYGENE or ""
 
     else:
-        MYINPUT= sys.argv[1].strip()
+        MYINPUT= argv1.strip()
 
 
     orderS = 'ORDER BY nTraits DESC'

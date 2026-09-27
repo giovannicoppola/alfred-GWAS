@@ -977,6 +977,9 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 
 # Basic Usage 📖
 
+## First run 🔧
+- the GWAS database is not included. After installing, run the `::rebuild` keyword once: it downloads the latest GWAS Catalog and builds a local index. Run it again whenever you want fresh data.
+
 ## Querying by gene 🧬
 - launch with keyword (default: `gwg`) or custom hotkey, enter a search string. Results will include a gene name, the number of associated traits, and the number of papers.
 - output is sorted by number of traits by default. Adding `--p` to the search string will sort by number of papers. 
@@ -1208,7 +1211,7 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 		</dict>
 	</array>
 	<key>version</key>
-	<string>0.5</string>
+	<string>0.5.1</string>
 	<key>webaddress</key>
 	<string>https://github.com/giovannicoppola/alfred-GWAS</string>
 </dict>
