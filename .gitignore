@@ -6,3 +6,4 @@ lib
 bigFiles
 olderCode
 logs
+*.tsv

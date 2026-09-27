@@ -146,6 +146,7 @@ def associations_table(INDEX_DB, DATA_FILE):
     """Create the master associations table from the master file"""
 
     # reading the master file in:
+    t0 = time()
     print (f"\t 1. reading the master associations file in", end = "...", file=sys.stderr)
     myData = pd.read_csv(DATA_FILE, sep='\t', header=0, low_memory=False,
                          dtype={'PVALUE_MLOG': 'float64', 'OR or BETA': 'float64',
@@ -155,7 +156,9 @@ def associations_table(INDEX_DB, DATA_FILE):
     # fill NaN in string columns only (keep NaN in float columns for proper aggregation)
     str_cols = myData.select_dtypes(include='object').columns
     myData[str_cols] = myData[str_cols].fillna('')
-    print ("done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(myData):,} rows, {len(myData.columns)} cols)", file=sys.stderr)
+
+    t0 = time()
     print (f"\t 2. creating the sqlite database", end = "...", file=sys.stderr)
     con = sqlite3.connect(INDEX_DB)
     cursor = con.cursor()
@@ -171,7 +174,7 @@ def associations_table(INDEX_DB, DATA_FILE):
     # Remove empty segments from concatenation (e.g. ",," becomes ",")
     myData['ImplicatedGenes'] = raw.str.replace(r',+', ',', regex=True).str.strip(',')
 
-    print ("done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s)", file=sys.stderr)
 
     colophon = makeColophon (DATA_FILE)
 
@@ -208,6 +211,8 @@ def createTraitCounts (myDataFrame):
     geneAnnotation.to_sql("geneAnnotation", con, index=False)
 
     # ImplicatedGenes is pre-computed in associations_table(); explode once and reuse
+    t0 = time()
+    print (f"\n\t0. exploding gene associations", end = "...", file=sys.stderr)
     exploded = myDataFrame[['key', 'MAPPED_TRAIT', 'PUBMEDID', 'OR or BETA',
                             'PVALUE_MLOG', 'REGION', 'ImplicatedGenes']].copy()
     exploded = exploded[exploded['ImplicatedGenes'] != '']
@@ -215,9 +220,12 @@ def createTraitCounts (myDataFrame):
     exploded = exploded.explode('ImplicatedGenes')
     exploded['ImplicatedGenes'] = exploded['ImplicatedGenes'].str.strip()
     exploded = exploded[exploded['ImplicatedGenes'] != '']
+    n_unique_genes = exploded['ImplicatedGenes'].nunique()
+    print (f"done ({time()-t0:.1f}s, {len(exploded):,} gene-association rows, {n_unique_genes:,} unique genes)", file=sys.stderr)
 
 
     ### 1. Pubmed + Gene Summary by trait
+    t0 = time()
     print (f"\n\t1. Pubmed and Gene Summary by trait", end = "...", file=sys.stderr)
 
     pub_agg = myDataFrame.groupby('MAPPED_TRAIT')['PUBMEDID'].agg(
@@ -236,9 +244,10 @@ def createTraitCounts (myDataFrame):
     cursor.execute(f"DROP TABLE IF EXISTS traitCounts")
     merged_data.to_sql("traitCounts", con, index=False)
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(merged_data):,} traits)", file=sys.stderr)
 
     ### 2. geneCounts table
+    t0 = time()
     print (f"\n\t2. geneCounts table", end = "...", file=sys.stderr)
 
     geneCounts = exploded.groupby('ImplicatedGenes')['MAPPED_TRAIT'].nunique().reset_index()
@@ -248,9 +257,10 @@ def createTraitCounts (myDataFrame):
     geneCounts = geneCounts.merge(geneAnnotation, left_on='gene', right_on='EnsemblGeneId', how='left')
     geneCounts = geneCounts.drop('EnsemblGeneId', axis=1)
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(geneCounts):,} genes)", file=sys.stderr)
 
     ### 3. genes implicated in Pubmed (paperCounts + complete geneCounts)
+    t0 = time()
     print (f"\n\t3. genes implicated in Pubmed", end = "...", file=sys.stderr)
 
     # Paper-level gene summary
@@ -276,9 +286,10 @@ def createTraitCounts (myDataFrame):
     cursor.execute(f"DROP TABLE IF EXISTS geneCounts")
     geneCounts.to_sql("geneCounts", con, index=False)
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(pub_genes):,} papers, {len(geneCounts):,} genes)", file=sys.stderr)
 
     ### 4. gene-trait table (no more redundant groupby on unique key)
+    t0 = time()
     print (f"\n\t4. gene-trait table", end = "...", file=sys.stderr)
 
     # exploded already has one gene per row with all needed columns
@@ -306,17 +317,19 @@ def createTraitCounts (myDataFrame):
     cursor.execute(f"DROP TABLE IF EXISTS GeneTrait")
     pair_dataAGG.to_sql("GeneTrait", con, index=False)
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(pair_dataAGG):,} gene-trait pairs)", file=sys.stderr)
 
     ### 5. Write the associations table (deferred to end to not block computation)
+    t0 = time()
     print (f"\n\t5. writing associations table", end = "...", file=sys.stderr)
 
     cursor.execute(f"DROP TABLE IF EXISTS associations")
     myDataFrame.to_sql("associations", con, index=False)
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s, {len(myDataFrame):,} rows)", file=sys.stderr)
 
     ### 6. Create indexes for query performance
+    t0 = time()
     print (f"\n\t6. creating indexes", end = "...", file=sys.stderr)
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_traitCounts_trait ON traitCounts(MAPPED_TRAIT)")
@@ -328,7 +341,7 @@ def createTraitCounts (myDataFrame):
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_geneAnnotation_ensembl ON geneAnnotation(EnsemblGeneId)")
     con.commit()
 
-    print (f"done", file=sys.stderr)
+    print (f"done ({time()-t0:.1f}s)", file=sys.stderr)
 
 
 def main(args=None):
@@ -361,48 +374,86 @@ def main(args=None):
         if os.path.exists(INDEX_DB):
            os.remove(INDEX_DB)
 
+        # Extract version from filename (e.g. "e115_r2026-02-16")
+        version_match = re.search(r'associations_(.+?)_full', DATA_FILE)
+        catalog_version = version_match.group(1) if version_match else 'unknown'
 
         logF (f"# GWAS catalog build\n{myTimeStamp}", file_name =  LOG_FILE)
-        logF (f"file used: {DATA_FILE}\n", file_name =  LOG_FILE)
-
-
+        logF (f"- **Version**: {catalog_version}", file_name =  LOG_FILE)
+        logF (f"- **Source**: `{os.path.basename(DATA_FILE)}`", file_name =  LOG_FILE)
+        source_size_mb = os.path.getsize(DATA_FILE) / (1024*1024)
+        logF (f"- **Source file size**: {source_size_mb:.1f} MB\n", file_name =  LOG_FILE)
 
     # importing the master association table into the database
 
         print (f"1. creating the master associations table", file=sys.stderr)
+        step_start = time()
         myData = associations_table(INDEX_DB,DATA_FILE)
+        step1_time = time() - step_start
 
     # outputting basic stats
-        n = myData['PUBMEDID'].nunique()
-        print (f"number of unique studies: {n:,}", file=sys.stderr)
-        logF (f"- number of unique studies: {n:,}", file_name =  LOG_FILE)
+        n_assoc = len(myData)
+        n_studies = myData['PUBMEDID'].nunique()
+        n_disease = myData['DISEASE/TRAIT'].nunique()
+        n_mapped = myData['MAPPED_TRAIT'].nunique()
+        n_snps = myData['SNPS'].nunique() if 'SNPS' in myData.columns else 0
 
-        n = myData['DISEASE/TRAIT'].nunique()
-        print (f"number of unique disease/traits: {n:,}", file=sys.stderr)
-        logF (f"- number of unique disease/traits: {n:,}", file_name =  LOG_FILE)
+        print (f"number of unique studies: {n_studies:,}", file=sys.stderr)
+        print (f"number of unique disease/traits: {n_disease:,}", file=sys.stderr)
+        print (f"number of unique mapped traits: {n_mapped:,}", file=sys.stderr)
 
-        n = myData['MAPPED_TRAIT'].nunique()
-        print (f"number of unique mapped traits: {n:,}", file=sys.stderr)
-        logF (f"- number of unique mapped traits: {n:,}", file_name =  LOG_FILE)
-
-
+        logF (f"## Input data", file_name =  LOG_FILE)
+        logF (f"| Metric | Count |", file_name =  LOG_FILE)
+        logF (f"|--------|------:|", file_name =  LOG_FILE)
+        logF (f"| Total associations | {n_assoc:,} |", file_name =  LOG_FILE)
+        logF (f"| Unique studies (PUBMEDID) | {n_studies:,} |", file_name =  LOG_FILE)
+        logF (f"| Unique disease/traits | {n_disease:,} |", file_name =  LOG_FILE)
+        logF (f"| Unique mapped traits | {n_mapped:,} |", file_name =  LOG_FILE)
+        logF (f"| Unique SNPs | {n_snps:,} |", file_name =  LOG_FILE)
 
     # generate trait counts using 1) the master dataset, 2) the list of unique traits, 3) the association table source dictionary
         print (f"\n2. generating trait and gene counts ...", file=sys.stderr)
 
+        step_start = time()
         createTraitCounts (myData)
-
-
-
+        step2_time = time() - step_start
 
         main_timeElapsed = time() - main_start_time
+
+        # Database file size
+        db_size_mb = os.path.getsize(INDEX_DB) / (1024*1024)
+
+        # Table row counts from the database
+        con = sqlite3.connect(INDEX_DB)
+        cursor = con.cursor()
+        tables = {}
+        for row in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+            tname = row[0]
+            count = cursor.execute(f"SELECT COUNT(*) FROM [{tname}]").fetchone()[0]
+            tables[tname] = count
+        con.close()
+
+        logF (f"\n## Database tables", file_name =  LOG_FILE)
+        logF (f"| Table | Rows |", file_name =  LOG_FILE)
+        logF (f"|-------|-----:|", file_name =  LOG_FILE)
+        for tname, count in sorted(tables.items()):
+            logF (f"| {tname} | {count:,} |", file_name =  LOG_FILE)
+        logF (f"| **Database size** | **{db_size_mb:.1f} MB** |", file_name =  LOG_FILE)
+
+        logF (f"\n## Timing", file_name =  LOG_FILE)
+        logF (f"| Step | Duration |", file_name =  LOG_FILE)
+        logF (f"|------|------:|", file_name =  LOG_FILE)
+        logF (f"| 1. Read & prepare associations | {step1_time:.1f}s |", file_name =  LOG_FILE)
+        logF (f"| 2. Generate counts & indexes | {step2_time:.1f}s |", file_name =  LOG_FILE)
+        logF (f"| **Total** | **{main_timeElapsed:.1f}s ({main_timeElapsed/60:.1f} min)** |", file_name =  LOG_FILE)
+
         print(f"\nTotal script duration: {round (main_timeElapsed,2)} seconds", file=sys.stderr)
-        logF (f"\nTotal script duration: {round (main_timeElapsed,2)} seconds, {main_timeElapsed/60:.1f} minutes", file_name =  LOG_FILE)
 
     except Exception as e:
         print(f"ERROR: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc(file=sys.stderr)
+        logF (f"\n## ERROR\n```\n{e}\n```", file_name =  LOG_FILE)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@
 	<key>bundleid</key>
 	<string>alfred-gwas</string>
 	<key>category</key>
-	<string>myWorkflows</string>
+	<string>WIP</string>
 	<key>connections</key>
 	<dict>
 		<key>17432091-9261-4427-9D12-5524514AFEC9</key>
@@ -94,18 +94,6 @@
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>80227F6F-5A8D-4312-9798-F92AE27D0E7E</string>
-				<key>modifiers</key>
-				<integer>0</integer>
-				<key>modifiersubtext</key>
-				<string></string>
-				<key>sourceoutputuid</key>
-				<string>CE5789EF-5DC1-4C54-A5BD-32F3AA07CC9A</string>
-				<key>vitoclose</key>
-				<false/>
-			</dict>
-			<dict>
-				<key>destinationuid</key>
 				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
 				<key>modifiers</key>
 				<integer>0</integer>
@@ -113,18 +101,6 @@
 				<string></string>
 				<key>sourceoutputuid</key>
 				<string>D1A2B3C4-E5F6-7890-ABCD-EF1234567890</string>
-				<key>vitoclose</key>
-				<false/>
-			</dict>
-			<dict>
-				<key>destinationuid</key>
-				<string>65ABACDB-26F3-4D99-8E2A-145E05195090</string>
-				<key>modifiers</key>
-				<integer>0</integer>
-				<key>modifiersubtext</key>
-				<string></string>
-				<key>sourceoutputuid</key>
-				<string>B64C559F-544E-4836-8CDE-97569D6E60D8</string>
 				<key>vitoclose</key>
 				<false/>
 			</dict>
@@ -142,6 +118,30 @@
 			</dict>
 			<dict>
 				<key>destinationuid</key>
+				<string>80227F6F-5A8D-4312-9798-F92AE27D0E7E</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>CE5789EF-5DC1-4C54-A5BD-32F3AA07CC9A</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>65ABACDB-26F3-4D99-8E2A-145E05195090</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>B64C559F-544E-4836-8CDE-97569D6E60D8</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
 				<string>557B9C36-D8EF-471C-9C50-3A1BE9667134</string>
 				<key>modifiers</key>
 				<integer>0</integer>
@@ -149,33 +149,6 @@
 				<string></string>
 				<key>sourceoutputuid</key>
 				<string>6E7636A0-D4CF-41C1-A000-52E93CC53B70</string>
-				<key>vitoclose</key>
-				<false/>
-			</dict>
-		</array>
-		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
-		<array>
-			<dict>
-				<key>destinationuid</key>
-				<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
-				<key>modifiers</key>
-				<integer>0</integer>
-				<key>modifiersubtext</key>
-				<string></string>
-				<key>sourceoutputuid</key>
-				<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
-				<key>vitoclose</key>
-				<false/>
-			</dict>
-			<dict>
-				<key>destinationuid</key>
-				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
-				<key>modifiers</key>
-				<integer>0</integer>
-				<key>modifiersubtext</key>
-				<string></string>
-				<key>sourceoutputuid</key>
-				<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
 				<key>vitoclose</key>
 				<false/>
 			</dict>
@@ -214,6 +187,33 @@
 				<string></string>
 				<key>sourceoutputuid</key>
 				<string>CE5789EF-5DC1-4C54-A5BD-32F3AA07CC9A</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>2BA024A6-A356-4780-99A4-7ACF20024901</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
 				<key>vitoclose</key>
 				<false/>
 			</dict>
@@ -285,6 +285,27 @@
 			<integer>3</integer>
 		</dict>
 		<dict>
+			<key>config</key>
+			<dict>
+				<key>browser</key>
+				<string></string>
+				<key>skipqueryencode</key>
+				<false/>
+				<key>skipvarencode</key>
+				<false/>
+				<key>spaces</key>
+				<string></string>
+				<key>url</key>
+				<string>https://pubmed.ncbi.nlm.nih.gov/{var:myPUBMED}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openurl</string>
+			<key>uid</key>
+			<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
 			<key>type</key>
 			<string>alfred.workflow.utility.junction</string>
 			<key>uid</key>
@@ -320,6 +341,37 @@
 			<string>31843F63-69D9-4A85-AF79-7135282AC472</string>
 			<key>version</key>
 			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>0</integer>
+				<key>hotmod</key>
+				<integer>0</integer>
+				<key>hotstring</key>
+				<string></string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedAppsMode</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>17432091-9261-4427-9D12-5524514AFEC9</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -382,33 +434,48 @@
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>action</key>
-				<integer>0</integer>
-				<key>argument</key>
-				<integer>0</integer>
-				<key>focusedappvariable</key>
-				<false/>
-				<key>focusedappvariablename</key>
-				<string></string>
-				<key>hotkey</key>
-				<integer>0</integer>
-				<key>hotmod</key>
-				<integer>0</integer>
-				<key>hotstring</key>
-				<string></string>
-				<key>leftcursor</key>
-				<false/>
-				<key>modsmode</key>
-				<integer>0</integer>
-				<key>relatedAppsMode</key>
-				<integer>0</integer>
+				<key>conditions</key>
+				<array>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:myAction}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>0</integer>
+						<key>matchstring</key>
+						<string>openPubMed</string>
+						<key>outputlabel</key>
+						<string>open PubMed</string>
+						<key>uid</key>
+						<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
+					</dict>
+					<dict>
+						<key>inputstring</key>
+						<string>{var:myAction}</string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>1</integer>
+						<key>matchstring</key>
+						<string>openPubMed</string>
+						<key>outputlabel</key>
+						<string>List-Items</string>
+						<key>uid</key>
+						<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
+					</dict>
+				</array>
+				<key>elselabel</key>
+				<string>else</string>
+				<key>hideelse</key>
+				<true/>
 			</dict>
 			<key>type</key>
-			<string>alfred.workflow.trigger.hotkey</string>
+			<string>alfred.workflow.utility.conditional</string>
 			<key>uid</key>
-			<string>17432091-9261-4427-9D12-5524514AFEC9</string>
+			<string>COND0001-ACT1-CHECK-OPEN-PUBMED000001</string>
 			<key>version</key>
-			<integer>2</integer>
+			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -485,37 +552,6 @@ python3 query-items.py "$1"</string>
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>action</key>
-				<integer>0</integer>
-				<key>argument</key>
-				<integer>0</integer>
-				<key>focusedappvariable</key>
-				<false/>
-				<key>focusedappvariablename</key>
-				<string></string>
-				<key>hotkey</key>
-				<integer>0</integer>
-				<key>hotmod</key>
-				<integer>0</integer>
-				<key>hotstring</key>
-				<string></string>
-				<key>leftcursor</key>
-				<false/>
-				<key>modsmode</key>
-				<integer>0</integer>
-				<key>relatedAppsMode</key>
-				<integer>0</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.trigger.hotkey</string>
-			<key>uid</key>
-			<string>99981613-3EE3-446B-9255-E2A40F19723F</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>alfredfiltersresults</key>
 				<false/>
 				<key>alfredfiltersresultsmatchmode</key>
@@ -574,6 +610,37 @@ python3 query-items.py "$1"</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>0</integer>
+				<key>hotmod</key>
+				<integer>0</integer>
+				<key>hotstring</key>
+				<string></string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedAppsMode</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>99981613-3EE3-446B-9255-E2A40F19723F</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>autopaste</key>
 				<false/>
 				<key>clipboardtext</key>
@@ -606,6 +673,27 @@ python3 query-items.py "$1"</string>
 			<string>alfred.workflow.output.callexternaltrigger</string>
 			<key>uid</key>
 			<string>80227F6F-5A8D-4312-9798-F92AE27D0E7E</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>acceptsfiles</key>
+				<true/>
+				<key>acceptsmulti</key>
+				<integer>0</integer>
+				<key>acceptstext</key>
+				<false/>
+				<key>acceptsurls</key>
+				<false/>
+				<key>name</key>
+				<string>rebuild GWAS database</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.universalaction</string>
+			<key>uid</key>
+			<string>F29756A9-34B2-4DF7-8C3E-04C61692D9CD</string>
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
@@ -648,27 +736,6 @@ end run</string>
 			<string>58C59CD3-F209-48B5-B3C0-840E46E38F9D</string>
 			<key>version</key>
 			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>acceptsfiles</key>
-				<true/>
-				<key>acceptsmulti</key>
-				<integer>0</integer>
-				<key>acceptstext</key>
-				<false/>
-				<key>acceptsurls</key>
-				<false/>
-				<key>name</key>
-				<string>rebuild GWAS database</string>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.trigger.universalaction</string>
-			<key>uid</key>
-			<string>F29756A9-34B2-4DF7-8C3E-04C61692D9CD</string>
-			<key>version</key>
-			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -812,71 +879,6 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>conditions</key>
-				<array>
-					<dict>
-						<key>inputstring</key>
-						<string>{var:myAction}</string>
-						<key>matchcasesensitive</key>
-						<false/>
-						<key>matchmode</key>
-						<integer>0</integer>
-						<key>matchstring</key>
-						<string>openPubMed</string>
-						<key>outputlabel</key>
-						<string>open PubMed</string>
-						<key>uid</key>
-						<string>AABB1122-3344-5566-7788-99AABBCCDDEE</string>
-					</dict>
-					<dict>
-						<key>inputstring</key>
-						<string>{var:myAction}</string>
-						<key>matchcasesensitive</key>
-						<false/>
-						<key>matchmode</key>
-						<integer>1</integer>
-						<key>matchstring</key>
-						<string>openPubMed</string>
-						<key>outputlabel</key>
-						<string>List-Items</string>
-						<key>uid</key>
-						<string>BBCC2233-4455-6677-8899-AABBCCDDEEFF</string>
-					</dict>
-				</array>
-				<key>elselabel</key>
-				<string>else</string>
-				<key>hideelse</key>
-				<true/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.conditional</string>
-			<key>uid</key>
-			<string>COND0001-ACT1-CHECK-OPEN-PUBMED000001</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>browser</key>
-				<string></string>
-				<key>skipqueryencode</key>
-				<false/>
-				<key>spaces</key>
-				<string></string>
-				<key>url</key>
-				<string>https://pubmed.ncbi.nlm.nih.gov/{var:myPUBMED}</string>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.openurl</string>
-			<key>uid</key>
-			<string>OPENURL1-PUB1-MED1-OPEN-URL000000001</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>alfredfiltersresults</key>
 				<false/>
 				<key>alfredfiltersresultsmatchmode</key>
@@ -1002,20 +1004,6 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 - once an individual association is selected, `enter` will open the supporting publication in Pubmed.</string>
 	<key>uidata</key>
 	<dict>
-		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
-		<dict>
-			<key>xpos</key>
-			<real>850</real>
-			<key>ypos</key>
-			<real>180</real>
-		</dict>
-		<key>OPENURL1-PUB1-MED1-OPEN-URL000000001</key>
-		<dict>
-			<key>xpos</key>
-			<real>1050</real>
-			<key>ypos</key>
-			<real>100</real>
-		</dict>
 		<key>17432091-9261-4427-9D12-5524514AFEC9</key>
 		<dict>
 			<key>xpos</key>
@@ -1129,6 +1117,13 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<key>ypos</key>
 			<real>705</real>
 		</dict>
+		<key>COND0001-ACT1-CHECK-OPEN-PUBMED000001</key>
+		<dict>
+			<key>xpos</key>
+			<real>850</real>
+			<key>ypos</key>
+			<real>180</real>
+		</dict>
 		<key>E2E84778-9472-48A7-851A-87F07879DA5C</key>
 		<dict>
 			<key>note</key>
@@ -1158,6 +1153,13 @@ An Alfred workflow to quickly interrogate the GWAS catalog
 			<real>55</real>
 			<key>ypos</key>
 			<real>650</real>
+		</dict>
+		<key>OPENURL1-PUB1-MED1-OPEN-URL000000001</key>
+		<dict>
+			<key>xpos</key>
+			<real>1050</real>
+			<key>ypos</key>
+			<real>100</real>
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
